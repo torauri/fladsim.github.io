@@ -2,7 +2,22 @@
 const canvas = document.querySelector('#arena');
 const $ = (id) => document.getElementById(id);
 let state = {x: 0, y: .72, target: null, telegraphs: [], angles: [], hits: [], resolved: 0, time: 0, phase: 'ready', paused: false, running: false};
-let command, world, lastTime, held = new Set(), dragging = false;
+let command, world, lastTime, held = new Set(), canvasPointer = null;
+const cameraStick = new VirtualStick($('camera-stick'));
+const moveStick = new VirtualStick($('move-stick'), () => call('stop'));
+function clearInput() {
+  held.clear();
+  cameraStick.clear();
+  moveStick.clear();
+  const pointer = canvasPointer;
+  canvasPointer = null;
+  if (pointer && canvas.hasPointerCapture(pointer.id)) canvas.releasePointerCapture(pointer.id);
+}
+function orbit(horizontal, vertical) {
+  if (!world || (!horizontal && !vertical)) return;
+  const top = world.orbit(horizontal, vertical);
+  $('view').textContent = top ? '斜めから見る' : '真上から見る';
+}
 function call(action, payload = {}) {
   if (!command) return;
   state = JSON.parse(command(action, JSON.stringify(payload)));
@@ -43,25 +58,51 @@ function point(event) {
   const target = world.point(event);
   if (target) call('target', target);
 }
-canvas.addEventListener('pointerdown', event => { if (event.button !== 0) return; dragging = true; canvas.setPointerCapture(event.pointerId); canvas.focus({ preventScroll: true }); point(event); });
-canvas.addEventListener('pointermove', event => { if (dragging) point(event); });
-canvas.addEventListener('pointerup', () => { dragging = false; });
-canvas.addEventListener('pointercancel', () => { dragging = false; });
+canvas.addEventListener('contextmenu', event => event.preventDefault());
+canvas.addEventListener('pointerdown', event => {
+  if (canvasPointer || !world || (event.button !== 0 && event.button !== 2)) return;
+  event.preventDefault();
+  const camera = event.pointerType === 'mouse' && (event.button === 2 || event.altKey);
+  canvasPointer = {id: event.pointerId, camera, x: event.clientX, y: event.clientY};
+  canvas.setPointerCapture(event.pointerId);
+  canvas.focus({preventScroll: true});
+  if (!camera) point(event);
+});
+canvas.addEventListener('pointermove', event => {
+  if (!canvasPointer || canvasPointer.id !== event.pointerId) return;
+  if (canvasPointer.camera) {
+    orbit(-(event.clientX - canvasPointer.x) * .008, (event.clientY - canvasPointer.y) * .008);
+    canvasPointer.x = event.clientX;
+    canvasPointer.y = event.clientY;
+    draw();
+  } else point(event);
+});
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  canvas.addEventListener(type, event => {
+    if (canvasPointer?.id === event.pointerId) canvasPointer = null;
+  });
+}
 document.addEventListener('keydown', event => {
   if (event.target.matches('select, input, textarea, button')) return;
   const key = event.key.toLowerCase();
   if ('wasd'.includes(key) && key.length === 1) { event.preventDefault(); held.add(key); }
 });
 document.addEventListener('keyup', event => held.delete(event.key.toLowerCase()));
-window.addEventListener('blur', () => { held.clear(); if (state.running && !state.paused) call('pause'); });
-document.addEventListener('visibilitychange', () => { held.clear(); lastTime = undefined; if (document.hidden && state.running && !state.paused) call('pause'); });
-$('start').addEventListener('click', () => { held.clear(); call('start', { direction: $('direction').value }); canvas.focus({ preventScroll: true }); });
-$('reset').addEventListener('click', () => { held.clear(); call('reset'); });
-$('pause').addEventListener('click', () => { held.clear(); call('pause'); canvas.focus({ preventScroll: true }); });
+window.addEventListener('blur', () => { clearInput(); if (state.running && !state.paused) call('pause'); });
+document.addEventListener('visibilitychange', () => { clearInput(); lastTime = undefined; if (document.hidden && state.running && !state.paused) call('pause'); });
+window.addEventListener('resize', clearInput);
+$('start').addEventListener('click', () => { clearInput(); call('start', { direction: $('direction').value }); canvas.focus({ preventScroll: true }); });
+$('reset').addEventListener('click', () => { clearInput(); call('reset'); });
+$('pause').addEventListener('click', () => { clearInput(); call('pause'); canvas.focus({ preventScroll: true }); });
 function frame(now) {
   if (command && lastTime !== undefined) {
-    const movement = world.movement(Number(held.has('d')) - Number(held.has('a')), Number(held.has('s')) - Number(held.has('w')));
-    call('update', {dt: Math.min((now - lastTime) / 1000, .1), ...movement});
+    const dt = Math.min((now - lastTime) / 1000, .1);
+    orbit(-cameraStick.x * dt * 1.8, cameraStick.y * dt * 1.2);
+    const keyboardX = Number(held.has('d')) - Number(held.has('a'));
+    const keyboardY = Number(held.has('s')) - Number(held.has('w'));
+    const movement = world.movement(keyboardX || keyboardY ? keyboardX : moveStick.x,
+      keyboardX || keyboardY ? keyboardY : moveStick.y);
+    call('update', {dt, ...movement});
   }
   lastTime = now; draw(); requestAnimationFrame(frame);
 }

@@ -58,8 +58,9 @@ class Game:
             if dx or dy:
                 self.target = None
                 length = math.hypot(dx, dy)
-                self.x += dx / length * SPEED * step
-                self.y += dy / length * SPEED * step
+                strength = min(1.0, length)
+                self.x += dx / length * strength * SPEED * step
+                self.y += dy / length * strength * SPEED * step
             elif self.target:
                 tx, ty = self.target
                 length = math.hypot(tx - self.x, ty - self.y)
@@ -120,6 +121,8 @@ def command(action, payload="{}"):
         game.reset()
     elif action == "target":
         game.move_to(data["x"], data["y"])
+    elif action == "stop":
+        game.target = None
     elif action == "pause":
         game.paused = not game.paused
     elif action == "update":

@@ -103,6 +103,19 @@ class MechanicTests(unittest.TestCase):
         a.reset()
         self.assertEqual(a.state()["phase"], "ready")
 
+    def test_analog_speed_and_stick_release(self):
+        slow, full = Game(), Game()
+        slow.update(.1, .5, 0)
+        full.update(.1, 1, 0)
+        self.assertAlmostEqual(slow.x, full.x / 2)
+        # Manual input cancels a previous click target; releasing stops movement.
+        slow.move_to(.8, .1)
+        slow.update(.1, .5, 0)
+        self.assertIsNone(slow.target)
+        position = (slow.x, slow.y)
+        slow.update(.5, 0, 0)
+        self.assertEqual((slow.x, slow.y), position)
+
 
 if __name__ == "__main__":
     unittest.main()

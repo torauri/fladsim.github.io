@@ -7,10 +7,13 @@ export function createArena(canvas) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1.32, 1.32, 1.32, -1.32, .01, 20);
-  let azimuth = 0, overhead = false;
+  let azimuth = 0, elevation = Math.atan2(3.3, 2.3);
+  const topElevation = Math.PI / 2 - .001;
+  const minElevation = Math.PI / 6;
+  let obliqueElevation = elevation;
   function positionCamera() {
-    const distance = overhead ? .001 : 2.3;
-    camera.position.set(Math.sin(azimuth) * distance, overhead ? 5 : 3.3, Math.cos(azimuth) * distance);
+    const distance = Math.cos(elevation) * 4;
+    camera.position.set(Math.sin(azimuth) * distance, Math.sin(elevation) * 4, Math.cos(azimuth) * distance);
     camera.up.set(-Math.sin(azimuth), 0, -Math.cos(azimuth));
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld();
@@ -126,6 +129,18 @@ export function createArena(canvas) {
     point(event) {const bounds=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-bounds.left)/bounds.width*2-1,1-(event.clientY-bounds.top)/bounds.height*2),camera);return raycaster.ray.intersectPlane(floor,point)?{x:point.x,y:point.z}:null;},
     movement(dx,dy) {return {dx:dx*Math.cos(azimuth)+dy*Math.sin(azimuth),dy:dy*Math.cos(azimuth)-dx*Math.sin(azimuth)};},
     rotate(delta) {azimuth+=delta;positionCamera();},
-    toggleView() {overhead=!overhead;positionCamera();return overhead;}
+    orbit(horizontal, vertical) {
+      azimuth = (azimuth + horizontal) % (Math.PI * 2);
+      elevation = Math.max(minElevation, Math.min(topElevation, elevation + vertical));
+      if (elevation < topElevation) obliqueElevation = elevation;
+      positionCamera();
+      return elevation >= topElevation;
+    },
+    toggleView() {
+      const overhead = elevation < topElevation;
+      elevation = overhead ? topElevation : obliqueElevation;
+      positionCamera();
+      return overhead;
+    }
   };
 }
