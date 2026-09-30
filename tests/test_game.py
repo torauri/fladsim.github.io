@@ -12,7 +12,9 @@ class MechanicTests(unittest.TestCase):
         self.assertEqual(len(game.state()["telegraphs"]), 1)
         for t in range(1, 4):
             game.update(1)
-            self.assertEqual(len(game.state()["telegraphs"]), t + 1)
+            visible = game.state()["telegraphs"]
+            self.assertEqual(len(visible), 1)
+            self.assertEqual(visible[0]["index"], t)
         game.update(2.99)
         self.assertEqual(game.resolved, 0)
         game.update(.01)
@@ -22,6 +24,27 @@ class MechanicTests(unittest.TestCase):
             self.assertEqual(game.resolved, count)
         game.update(.66)
         self.assertEqual(game.state()["phase"], "result")
+
+    def test_telegraphs_disappear_after_one_second(self):
+        game = Game(random.Random(1))
+        game.start()
+        for i in range(4):
+            game.time = i + .999
+            self.assertEqual([t["index"] for t in game.state()["telegraphs"]], [i])
+            game.time = i + 1
+            self.assertNotIn(i, [t["index"] for t in game.state()["telegraphs"]])
+        for time in [4, 5, 5.999]:
+            game.time = time
+            self.assertEqual(game.state()["telegraphs"], [])
+            self.assertEqual(game.state()["phase"], "wait")
+        for i in range(4):
+            game.time = 6 + i
+            visible = game.state()["telegraphs"]
+            self.assertEqual(len(visible), 1)
+            self.assertEqual(visible[0]["index"], i)
+            self.assertTrue(visible[0]["attack"])
+            game.time = 6 + i + .45
+            self.assertEqual(game.state()["telegraphs"], [])
 
     def test_four_starts_and_rotation(self):
         starts = set()

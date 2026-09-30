@@ -87,13 +87,16 @@ class Game:
     def state(self):
         telegraphs = []
         for i, angle in enumerate(self.angles):
-            if self.time + 1e-9 >= i and self.time < 6 + i + 0.45:
-                telegraphs.append({"angle": angle, "index": i, "attack": self.time + 1e-9 >= 6 + i})
+            now = self.time + 1e-9
+            warning = i <= now < i + 1
+            attack = 6 + i <= now < 6 + i + 0.45
+            if warning or attack:
+                telegraphs.append({"angle": angle, "index": i, "attack": attack})
         if not self.angles:
             phase = "ready"
         elif not self.running:
             phase = "result"
-        elif self.time < 3:
+        elif self.time + 1e-9 < 4:
             phase = "telegraph"
         elif self.time < 6:
             phase = "wait"
