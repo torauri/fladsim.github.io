@@ -32,6 +32,25 @@ class ThreeStarsTimelineTests(unittest.TestCase):
 
 
 class ThreeStarsMechanicTests(unittest.TestCase):
+    def test_judgment_cylinders_use_previous_wave_and_fade_after_final_check(self):
+        game = ThreeStarsGame(random.Random(4))
+        game.start()
+        game.update(12.99)
+        self.assertFalse(any(t['judgment'] for t in game.state()['towers']))
+        for wave in range(3):
+            game.update(.01 if wave == 0 else 6.2)
+            state = game.state()
+            self.assertEqual({t['id'] for t in state['towers'] if t['judgment']}, set(game.patterns[wave]))
+            game.paused = True
+            game.update(1)
+            self.assertEqual(game.state()['judgment_progress'],state['judgment_progress'])
+            game.paused = False
+            game.update(.8)
+            self.assertFalse(any(t['judgment'] for t in game.state()['towers']))
+        self.assertAlmostEqual(game.time,27)
+        game.reset()
+        self.assertFalse(any(t['judgment'] for t in game.state()['towers']))
+
     def test_fixed_north_gap_with_random_attribute_groups(self):
         orders = set()
         for seed in range(40):

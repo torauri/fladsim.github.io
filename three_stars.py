@@ -46,6 +46,9 @@ class ThreeStarsGame:
     def reset(self):
         self.x, self.y = 0.0, .45
         self.time = 0.0
+        self.visual_time = 0.0
+        self.last_judgment_time = None
+        self.judged_towers = []
         self.running = self.paused = self.started = False
         self.initial_debuff = self.debuff = None
         self.results = []
@@ -99,6 +102,8 @@ class ThreeStarsGame:
 
     def check(self, wave):
         active = self.patterns[wave]
+        self.last_judgment_time = self.visual_time
+        self.judged_towers = list(active)
         occupied = next((i for i in active if math.hypot(self.x - self.towers[i]["x"], self.y - self.towers[i]["y"]) <= TOWER_RADIUS - PLAYER_RADIUS + 1e-9), None)
         tower_ok = occupied == self.expected_tower
         distance = math.hypot(self.x, self.y)
@@ -126,6 +131,8 @@ class ThreeStarsGame:
         while dt > 1e-9:
             step = min(dt, 1 / 120)
             dt -= step
+            if self.started:
+                self.visual_time += step
             if dx or dy:
                 length = math.hypot(dx, dy)
                 speed = SPEED * min(1.0, length) * step
@@ -154,6 +161,8 @@ class ThreeStarsGame:
         info = timeline_at(self.time) if self.started else {"phase": "ready", "wave": 0, "countdown": 0, "remaining": 0}
         active = self.patterns[info["wave"] - 1] if info["phase"] == "towers" else []
         effect = self.effects[info["wave"] - 1] if active else None
+        judgment_age = self.visual_time - self.last_judgment_time if self.last_judgment_time is not None else 1.0
+        judgment = self.judged_towers if judgment_age + 1e-9 < .8 else []
         # Show a short attack flash after phase 1 and at the final result.
         flash = None
         for wave, result in enumerate(self.results):
@@ -164,7 +173,9 @@ class ThreeStarsGame:
                 "started": self.started, "debuff": self.debuff,
                 "debuff_assigned": self.started and self.time + 1e-9 >= COUNTDOWN_END,
                 "resolved": self.resolved, "hits": self.hits, "results": self.results,
-                "towers": [{**tower, "active": tower["id"] in active, "used": False} for tower in self.towers],
+                "towers": [{**tower, "active": tower["id"] in active, "used": False,
+                            "judgment": tower["id"] in judgment} for tower in self.towers],
+                "judgment_progress": min(1.0, judgment_age / .8),
                 "boss_effect": effect, "boss_flash": flash, "boss_attack_radius": TOWER_DISTANCE,
                 "telegraphs": [], "angles": []}
 

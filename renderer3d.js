@@ -119,8 +119,10 @@ export function createArena(canvas) {
     const outline = ring(tower.radius,color,.023,.003,group);
     const beamMaterial = new THREE.MeshBasicMaterial({color,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide});
     const beam = mesh(new THREE.CylinderGeometry(tower.radius*.8,tower.radius,.34,24,1,true),beamMaterial,group);beam.position.y=.19;
+    const judgment = mesh(new THREE.CylinderGeometry(tower.radius,tower.radius,.95,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.8,depthWrite:false}),group);
+    judgment.position.y=.5;judgment.visible=false;
     const icon = label(elementLabels[tower.element],color,.085);icon.position.set(tower.x,.40,tower.y);
-    return {group,baseMaterial,beam,outline,icon,element:tower.element};
+    return {group,baseMaterial,beam,judgment,outline,icon,element:tower.element};
   }
   const effect = new THREE.Group();scene.add(effect);
   const windMaterial = new THREE.MeshBasicMaterial({color:'#83f3d3',transparent:true,opacity:.8});
@@ -146,6 +148,7 @@ export function createArena(canvas) {
         const color=elementColors[tower.element];
         object.baseMaterial.color.set(color);object.baseMaterial.emissive.set(color);
         object.beam.material.color.set(color);object.outline.material.color.set(color);
+        object.judgment.material.color.set(color);
         scene.remove(object.icon);object.icon.material.map.dispose();object.icon.material.dispose();
         object.icon=label(elementLabels[tower.element],color,.085);
         object.element=tower.element;
@@ -155,6 +158,10 @@ export function createArena(canvas) {
       object.baseMaterial.opacity=tower.active?.65:tower.used?.08:.2;
       object.baseMaterial.emissiveIntensity=tower.active?1:.05;
       object.beam.visible=tower.active;
+      object.judgment.visible=Boolean(tower.judgment);
+      object.judgment.material.opacity=.8*(1-state.judgment_progress);
+      object.judgment.scale.y=1+state.judgment_progress*.35;
+      object.judgment.position.y=.025+.475*object.judgment.scale.y;
       object.outline.visible=!tower.used;
       object.icon.material.opacity=tower.active?1:.45;
       object.beam.scale.y=1+Math.sin(state.time*4+tower.id)*.08;
