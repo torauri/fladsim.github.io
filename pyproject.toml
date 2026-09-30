@@ -1,0 +1,9 @@
+[project]
+name = "fladsim"
+version = "0.1.0"
+description = "Browser-based FFXIV mechanic practice"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
