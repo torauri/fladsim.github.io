@@ -12,11 +12,13 @@ export function createArena(canvas) {
   const topElevation = Math.PI / 2 - .001;
   const minElevation = Math.PI / 6;
   let obliqueElevation = elevation;
+  const cameraTarget = new THREE.Vector3(0, .06, .72);
   function positionCamera() {
     const distance = Math.cos(elevation) * 4;
-    camera.position.set(Math.sin(azimuth) * distance, Math.sin(elevation) * 4, Math.cos(azimuth) * distance);
+    camera.position.set(cameraTarget.x + Math.sin(azimuth) * distance,
+      cameraTarget.y + Math.sin(elevation) * 4, cameraTarget.z + Math.cos(azimuth) * distance);
     camera.up.set(-Math.sin(azimuth), 0, -Math.cos(azimuth));
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(cameraTarget);
     camera.updateMatrixWorld();
   }
   positionCamera();
@@ -108,6 +110,8 @@ export function createArena(canvas) {
   });
   function draw(state) {
     player.position.set(state.x,0,state.y);
+    cameraTarget.set(state.x, .06, state.y);
+    positionCamera();
     const hit=state.hits.some(i=>state.time>=6+i&&state.time<6.6+i);
     playerMaterial.color.set(hit?'#ff6470':'#93f1dc');
     bands.forEach(({area,number})=>{area.visible=false;number.visible=false;});
