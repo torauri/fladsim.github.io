@@ -7,7 +7,8 @@ export function createArena(canvas) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1.32, 1.32, 1.32, -1.32, .01, 20);
-  let azimuth = 0, elevation = Math.atan2(3.3, 2.3);
+  const initialElevation = Math.atan2(3.3, 2.3);
+  let azimuth = 0, elevation = initialElevation;
   const topElevation = Math.PI / 2 - .001;
   const minElevation = Math.PI / 6;
   let obliqueElevation = elevation;
@@ -80,7 +81,6 @@ export function createArena(canvas) {
     const leg = mesh(new THREE.BoxGeometry(.012,.036,.017),playerMaterial,player); leg.position.set(side*.011,.022,0);
   }
   ring(.035,'#b3ffe8',.006,.002,player);
-  const destination = ring(.025,'#87d9c5',.014,.002); destination.visible=false;
 
   // Clip each band polygon to the circular arena instead of showing a rectangle outside it.
   function bandGeometry(angle) {
@@ -110,8 +110,6 @@ export function createArena(canvas) {
     player.position.set(state.x,0,state.y);
     const hit=state.hits.some(i=>state.time>=6+i&&state.time<6.6+i);
     playerMaterial.color.set(hit?'#ff6470':'#93f1dc');
-    destination.visible=Boolean(state.target);
-    if(state.target) destination.position.set(state.target[0],.014,state.target[1]);
     bands.forEach(({area,number})=>{area.visible=false;number.visible=false;});
     for(const t of state.telegraphs) {
       const band=bands[t.index];
@@ -122,11 +120,10 @@ export function createArena(canvas) {
     }
     renderer.render(scene,camera);
   }
-  const raycaster=new THREE.Raycaster(), floor=new THREE.Plane(new THREE.Vector3(0,1,0),0), point=new THREE.Vector3();
   return {
     draw,
     resize() {const bounds=canvas.getBoundingClientRect();renderer.setSize(bounds.width,bounds.height,false);camera.left=-1.32* bounds.width/bounds.height;camera.right=1.32*bounds.width/bounds.height;camera.updateProjectionMatrix();},
-    point(event) {const bounds=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-bounds.left)/bounds.width*2-1,1-(event.clientY-bounds.top)/bounds.height*2),camera);return raycaster.ray.intersectPlane(floor,point)?{x:point.x,y:point.z}:null;},
+    resetCamera() {azimuth=0;elevation=obliqueElevation=initialElevation;positionCamera();},
     movement(dx,dy) {return {dx:dx*Math.cos(azimuth)+dy*Math.sin(azimuth),dy:dy*Math.cos(azimuth)-dx*Math.sin(azimuth)};},
     rotate(delta) {azimuth+=delta;positionCamera();},
     orbit(horizontal, vertical) {

@@ -92,8 +92,7 @@ class MechanicTests(unittest.TestCase):
         a.update(.1, 1, 0)
         b.update(.1, 1, 1)
         self.assertAlmostEqual(math.hypot(a.x, a.y - .72), math.hypot(b.x, b.y - .72))
-        a.move_to(20, 20)
-        a.update(10)
+        a.update(10, 1, 1)
         self.assertLessEqual(math.hypot(a.x, a.y), .975 + 1e-9)
         a.start()
         a.paused = True
@@ -108,10 +107,8 @@ class MechanicTests(unittest.TestCase):
         slow.update(.1, .5, 0)
         full.update(.1, 1, 0)
         self.assertAlmostEqual(slow.x, full.x / 2)
-        # Manual input cancels a previous click target; releasing stops movement.
-        slow.move_to(.8, .1)
+        # Releasing the stick stops movement immediately.
         slow.update(.1, .5, 0)
-        self.assertIsNone(slow.target)
         position = (slow.x, slow.y)
         slow.update(.5, 0, 0)
         self.assertEqual((slow.x, slow.y), position)

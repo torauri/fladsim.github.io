@@ -1,10 +1,10 @@
 /* Input and UI only. Python owns simulation; Three.js owns the 3D scene. */
 const canvas = document.querySelector('#arena');
 const $ = (id) => document.getElementById(id);
-let state = {x: 0, y: .72, target: null, telegraphs: [], angles: [], hits: [], resolved: 0, time: 0, phase: 'ready', paused: false, running: false};
+let state = {x: 0, y: .72, telegraphs: [], angles: [], hits: [], resolved: 0, time: 0, phase: 'ready', paused: false, running: false};
 let command, world, lastTime, held = new Set(), canvasPointer = null;
 const cameraStick = new VirtualStick($('camera-stick'));
-const moveStick = new VirtualStick($('move-stick'), () => call('stop'));
+const moveStick = new VirtualStick($('move-stick'));
 function clearInput() {
   held.clear();
   cameraStick.clear();
@@ -53,29 +53,20 @@ function updateUI() {
     el.className = state.hits.includes(i) ? 'hit' : state.resolved > i ? 'done' : state.angles.length && state.time >= i ? 'shown' : '';
   });
 }
-function point(event) {
-  if (!world) return;
-  const target = world.point(event);
-  if (target) call('target', target);
-}
 canvas.addEventListener('contextmenu', event => event.preventDefault());
 canvas.addEventListener('pointerdown', event => {
-  if (canvasPointer || !world || (event.button !== 0 && event.button !== 2)) return;
+  if (canvasPointer || !world || event.pointerType !== 'mouse' || event.button !== 0) return;
   event.preventDefault();
-  const camera = event.pointerType === 'mouse' && (event.button === 2 || event.altKey);
-  canvasPointer = {id: event.pointerId, camera, x: event.clientX, y: event.clientY};
+  canvasPointer = {id: event.pointerId, x: event.clientX, y: event.clientY};
   canvas.setPointerCapture(event.pointerId);
   canvas.focus({preventScroll: true});
-  if (!camera) point(event);
 });
 canvas.addEventListener('pointermove', event => {
   if (!canvasPointer || canvasPointer.id !== event.pointerId) return;
-  if (canvasPointer.camera) {
-    orbit(-(event.clientX - canvasPointer.x) * .008, (event.clientY - canvasPointer.y) * .008);
-    canvasPointer.x = event.clientX;
-    canvasPointer.y = event.clientY;
-    draw();
-  } else point(event);
+  orbit(-(event.clientX - canvasPointer.x) * .008, (event.clientY - canvasPointer.y) * .008);
+  canvasPointer.x = event.clientX;
+  canvasPointer.y = event.clientY;
+  draw();
 });
 for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
   canvas.addEventListener(type, event => {
@@ -91,7 +82,14 @@ document.addEventListener('keyup', event => held.delete(event.key.toLowerCase())
 window.addEventListener('blur', () => { clearInput(); if (state.running && !state.paused) call('pause'); });
 document.addEventListener('visibilitychange', () => { clearInput(); lastTime = undefined; if (document.hidden && state.running && !state.paused) call('pause'); });
 window.addEventListener('resize', clearInput);
-$('start').addEventListener('click', () => { clearInput(); call('start', { direction: $('direction').value }); canvas.focus({ preventScroll: true }); });
+$('start').addEventListener('click', () => {
+  clearInput();
+  world.resetCamera();
+  $('view').textContent = '真上から見る';
+  call('start', { direction: $('direction').value });
+  canvas.focus({ preventScroll: true });
+  draw();
+});
 $('reset').addEventListener('click', () => { clearInput(); call('reset'); });
 $('pause').addEventListener('click', () => { clearInput(); call('pause'); canvas.focus({ preventScroll: true }); });
 function frame(now) {

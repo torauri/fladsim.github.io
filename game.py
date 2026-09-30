@@ -25,7 +25,6 @@ class Game:
 
     def reset(self):
         self.x, self.y = 0.0, 0.72
-        self.target = None
         self.time = 0.0
         self.running = False
         self.paused = False
@@ -41,12 +40,6 @@ class Game:
         self.angles = [(start + self.direction * i * 90) % 360 for i in range(4)]
         self.running = True
 
-    def move_to(self, x, y):
-        limit = 1 - PLAYER_RADIUS
-        length = math.hypot(x, y)
-        scale = min(1, limit / length) if length else 1
-        self.target = (x * scale, y * scale)
-
     def update(self, dt, dx=0, dy=0):
         if self.paused:
             return
@@ -56,20 +49,10 @@ class Game:
             step = min(dt, 1 / 120)
             dt -= step
             if dx or dy:
-                self.target = None
                 length = math.hypot(dx, dy)
                 strength = min(1.0, length)
                 self.x += dx / length * strength * SPEED * step
                 self.y += dy / length * strength * SPEED * step
-            elif self.target:
-                tx, ty = self.target
-                length = math.hypot(tx - self.x, ty - self.y)
-                if length <= SPEED * step:
-                    self.x, self.y = tx, ty
-                    self.target = None
-                else:
-                    self.x += (tx - self.x) / length * SPEED * step
-                    self.y += (ty - self.y) / length * SPEED * step
             length = math.hypot(self.x, self.y)
             if length > 1 - PLAYER_RADIUS:
                 scale = (1 - PLAYER_RADIUS) / length
@@ -103,7 +86,7 @@ class Game:
             phase = "wait"
         else:
             phase = "attack"
-        return {"x": self.x, "y": self.y, "target": self.target,
+        return {"x": self.x, "y": self.y,
                 "time": self.time, "running": self.running, "paused": self.paused,
                 "hits": self.hits, "resolved": self.resolved,
                 "angles": self.angles, "direction": self.direction,
@@ -119,10 +102,6 @@ def command(action, payload="{}"):
         game.start(data.get("direction", "random"))
     elif action == "reset":
         game.reset()
-    elif action == "target":
-        game.move_to(data["x"], data["y"])
-    elif action == "stop":
-        game.target = None
     elif action == "pause":
         game.paused = not game.paused
     elif action == "update":
