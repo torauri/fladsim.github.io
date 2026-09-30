@@ -109,7 +109,7 @@ export function createArena(canvas) {
     return {area,number,angle:null};
   });
   const towerObjects = new Map();
-  const elementColors = {fire:'#ff9860',lightning:'#dab1ff',ice:'#8ce6ff'};
+  const elementColors = {fire:'#ff9860',lightning:'#ffe16b',ice:'#8ce6ff'};
   const elementLabels = {fire:'炎',lightning:'雷',ice:'氷'};
   function makeTower(tower) {
     const group = new THREE.Group(); group.position.set(tower.x,0,tower.y); scene.add(group);
