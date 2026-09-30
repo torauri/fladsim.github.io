@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10191f">
-  <title>FladSim — ギミック練習</title>
+  <title>FladSim 3D — ギミック練習</title>
   <link rel="stylesheet" href="styles.css">
   <script defer src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js"></script>
   <script defer src="app.js"></script>
@@ -15,9 +15,10 @@
     <section class="intro"><p class="eyebrow">TRAINING / 01</p><h1>回転する直線範囲を、避ける。</h1><p>予兆の順番を覚えて、次の安全地帯へ。</p></section>
     <div class="layout">
       <section class="arena-panel" aria-label="練習フィールド">
-        <div class="arena-heading"><span><i class="live-dot"></i> ROTATING LINE</span><span id="runtime">Python を読み込み中…</span></div>
+        <div class="arena-heading"><span><i class="live-dot"></i> ROTATING LINE / 3D</span><span id="runtime">Python を読み込み中…</span></div>
+        <div class="camera-controls" aria-label="カメラ操作"><button id="camera-left" aria-label="カメラを左へ45度回転" disabled>↶</button><button id="view" disabled>真上から見る</button><button id="camera-right" aria-label="カメラを右へ45度回転" disabled>↷</button></div>
         <canvas id="arena" tabindex="0" aria-label="円形フィールド。クリック・タップで移動、WASDで操作できます。"></canvas>
-        <div class="arena-footer"><span><i class="legend player"></i>あなた</span><span><i class="legend warning"></i>予兆</span><span><i class="legend danger"></i>攻撃</span><span class="north">↑ 12時 / NORTH</span></div>
+        <div class="arena-footer"><span><i class="legend player"></i>あなた</span><span><i class="legend warning"></i>予兆</span><span><i class="legend danger"></i>攻撃</span><span class="north">A = 12時 / NORTH</span></div>
       </section>
       <aside>
         <section class="card status-card"><p class="eyebrow">SESSION</p><h2 id="phase">準備中</h2><p id="message" role="status" aria-live="polite">初回は読み込みに少し時間がかかります。</p><div class="timer"><span id="seconds">00.0</span><small>秒</small><span id="hit-count">被弾 0</span></div><div class="steps" id="steps" aria-label="攻撃の進行"><span>1</span><span>2</span><span>3</span><span>4</span></div><label for="direction">回転方向</label><select id="direction"><option value="random">ランダム</option><option value="cw">時計回り ↻</option><option value="ccw">反時計回り ↺</option></select><button id="start" class="primary" disabled>練習をはじめる <span>→</span></button><div class="secondary-actions"><button id="pause" disabled>一時停止</button><button id="reset" disabled>リセット</button></div></section>
