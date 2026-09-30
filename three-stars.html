@@ -4,24 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10191f">
-  <title>スリースターズ — FladSim</title>
+  <title>スリースターズ — FladSim 3D</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="three-stars.css">
+  <script defer src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js"></script>
+  <script defer src="controls.js"></script>
+  <script defer src="app.js"></script>
 </head>
-<body>
+<body data-simulator="three-stars">
   <main>
     <header><a class="brand" href="./"><span class="brand-icon">✦</span> Flad<span>Sim</span></a><span class="tag">FFXIV MECHANIC PRACTICE</span></header>
-    <a class="back-link" href="./">← シミュレーター選択に戻る</a>
-    <section class="selection-intro"><p class="eyebrow">TRAINING / 02</p><h1>スリースターズ</h1><p>スリースターズのギミックを練習するシミュレーター。</p></section>
-    <section class="development-panel" aria-labelledby="development-title">
-      <div class="star-orbit" aria-hidden="true"><span class="star star-one">✦</span><span class="star star-two">✦</span><span class="star star-three">✦</span></div>
-      <span class="availability development">開発中</span>
-      <h2 id="development-title">練習モードを準備しています。</h2>
-      <p>このページにスリースターズ専用のギミックを追加します。現在は選択画面と専用ページの構成を用意した段階です。</p>
-      <p class="development-note">フラッドの3D表示、キャラクター追従カメラ、PC・スマホの操作をベースに開発します。</p>
-      <a class="back-link" href="flood.html">フラッドを練習する →</a>
-    </section>
-    <footer>非公式の練習用シミュレーター · 実際のゲームとは判定・移動速度が異なります。</footer>
+    <a class="back-to-menu" href="./">← シミュレーター選択</a>
+    <section class="intro"><p class="eyebrow">TRAINING / 02 · THREE STARS</p><h1>スリースターズ</h1><p>デバフを確認して次の塔へ。土と風の攻撃も見極めよう。</p></section>
+    <div class="layout">
+      <section class="arena-panel" aria-label="スリースターズ練習フィールド">
+        <div class="arena-heading"><div class="arena-heading-info"><span><i class="live-dot"></i> THREE STARS / 3D</span><span id="runtime">Python を読み込み中…</span></div><button id="start" class="primary arena-start" disabled>練習をはじめる <span>→</span></button></div>
+        <div class="camera-controls" aria-label="カメラ操作"><button id="camera-left" aria-label="カメラを左へ45度回転" disabled>↶</button><button id="view" disabled>真上から見る</button><button id="camera-right" aria-label="カメラを右へ45度回転" disabled>↷</button></div>
+        <div class="stars-status"><span id="debuff-status">デバフ：未付与</span><span id="boss-status">ボス：攻撃エフェクトなし</span></div>
+        <div class="game-viewport">
+          <canvas id="arena" tabindex="0" aria-label="スリースターズ。WASDで移動、左ドラッグでカメラ操作。スマホは左スティックでカメラ、右で移動。"></canvas>
+          <div id="countdown-overlay" class="countdown-overlay" hidden aria-hidden="true"></div>
+          <div class="touch-controls" aria-label="タッチ操作">
+            <div class="stick-control stick-camera"><div id="camera-stick" class="virtual-stick" role="group" aria-label="カメラ操作用スティック"><span class="stick-thumb"></span><span class="stick-guides" aria-hidden="true">＋</span></div><span class="stick-label">カメラ</span></div>
+            <div class="stick-control stick-move"><div id="move-stick" class="virtual-stick" role="group" aria-label="移動用スティック"><span class="stick-thumb"></span><span class="stick-guides" aria-hidden="true">＋</span></div><span class="stick-label">移動</span></div>
+          </div>
+        </div>
+        <div class="tower-legend"><span class="fire">● 炎</span><span class="lightning">● 雷</span><span class="ice">● 氷</span><span>光る4本に注目</span></div>
+        <div class="arena-footer"><span><i class="legend player"></i>あなた</span><span><i class="legend warning"></i>点灯中の塔</span><span class="north">A = 12時 / NORTH</span></div>
+      </section>
+      <aside>
+        <section class="card status-card"><p class="eyebrow">SESSION</p><h2 id="phase">準備中</h2><p id="message" role="status" aria-live="polite">初回は読み込みに少し時間がかかります。</p><div class="timer"><span id="seconds">00.0</span><small>秒</small><span id="hit-count">失敗 0</span></div><div class="steps" id="steps" aria-label="フェーズの進行"><span>1</span><span>2</span><span>3</span></div><label for="debuff-choice">開始時のデバフ</label><select id="debuff-choice"><option value="random">ランダム</option><option value="fire">炎耐性低下</option><option value="lightning">雷耐性低下</option><option value="ice">氷耐性低下</option><option value="none">なし（無職）</option></select><label for="attack-choice">ボスの攻撃</label><select id="attack-choice"><option value="random">ランダム</option><option value="earth">土（中心円範囲）</option><option value="wind">風（外周ドーナツ範囲）</option></select><div class="secondary-actions"><button id="pause" disabled>一時停止</button><button id="reset" disabled>リセット</button></div><div id="wave-results" class="wave-results" role="status" aria-live="polite"></div></section>
+        <section class="card"><p class="eyebrow">HOW TO PLAY</p><h3>属性をつないで、3回。</h3><ol><li><b>3カウント後にデバフ確認</b><span>3秒の準備後、最初の塔が点灯。</span></li><li><b>デバフ持ちは時計回りに次の塔</b><span>同属性の点灯塔を探し、次の点灯塔へ。同属性が2本なら後ろ側を基準にします。</span></li><li><b>無職は重複属性の後ろ側</b><span>ボスから見て右側の塔に入ります。</span></li><li><b>各フェーズ7秒後に判定</b><span>1・3回目は土＝外側、風＝内側へ寄って塔と攻撃を同時に処理。</span></li></ol><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動 / 左ドラッグでカメラ</span><span>スマホ：左スティックでカメラ、右で移動</span><span>カメラ回転で見え方を変えて塔を確認できます。</span></div></section>
+      </aside>
+    </div>
+    <footer>非公式の練習用シミュレーター · 実際のゲームとは判定・移動速度が異なります。<br>参考：<a href="https://yan-flash.com/ultimate/yosei-ranbu#ult-phase-5" target="_blank" rel="noopener noreferrer">ヤーン速報・絶妖星乱舞 P5</a></footer>
   </main>
 </body>
 </html>

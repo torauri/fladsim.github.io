@@ -108,11 +108,58 @@ export function createArena(canvas) {
     const number=label(String(i+1),'#ffe1aa',.085);number.visible=false;
     return {area,number,angle:null};
   });
+  const towerObjects = new Map();
+  const elementColors = {fire:'#ff9860',lightning:'#dab1ff',ice:'#8ce6ff'};
+  const elementLabels = {fire:'炎',lightning:'雷',ice:'氷'};
+  function makeTower(tower) {
+    const group = new THREE.Group(); group.position.set(tower.x,0,tower.y); scene.add(group);
+    const color = elementColors[tower.element];
+    const baseMaterial = standard(color,{emissive:color,emissiveIntensity:.05,transparent:true,opacity:.3});
+    const base = mesh(new THREE.CylinderGeometry(tower.radius,tower.radius,.014,32),baseMaterial,group);base.position.y=.009;
+    const outline = ring(tower.radius,color,.023,.003,group);
+    const beamMaterial = new THREE.MeshBasicMaterial({color,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide});
+    const beam = mesh(new THREE.CylinderGeometry(tower.radius*.8,tower.radius,.34,24,1,true),beamMaterial,group);beam.position.y=.19;
+    const icon = label(elementLabels[tower.element],color,.085);icon.position.set(tower.x,.40,tower.y);
+    return {group,baseMaterial,beam,outline,icon};
+  }
+  const effect = new THREE.Group();scene.add(effect);
+  const windMaterial = new THREE.MeshBasicMaterial({color:'#83f3d3',transparent:true,opacity:.8});
+  const earthMaterial = standard('#c99b5e',{emissive:'#6d3f16',emissiveIntensity:.5});
+  const windRings = [.17,.22,.26].map((r,i)=>{const object=mesh(new THREE.TorusGeometry(r,.009,6,48),windMaterial,effect);object.rotation.x=Math.PI/2;object.position.y=.15+i*.1;return object;});
+  const rocks = Array.from({length:7},(_,i)=>{const object=mesh(new THREE.OctahedronGeometry(.035),earthMaterial,effect);const a=i*Math.PI*2/7;object.position.set(Math.cos(a)*.20,.1+(i%3)*.08,Math.sin(a)*.20);return object;});
+  effect.visible=false;
+  const attackMaterial = new THREE.MeshBasicMaterial({color:'#ff755f',transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide});
+  const earthAttack = mesh(new THREE.CircleGeometry(.70,128),attackMaterial);earthAttack.rotation.x=-Math.PI/2;earthAttack.position.y=.032;earthAttack.visible=false;
+  const windAttack = mesh(new THREE.RingGeometry(.70,1,128),attackMaterial.clone());windAttack.rotation.x=-Math.PI/2;windAttack.position.y=.032;windAttack.visible=false;
   function draw(state) {
     player.position.set(state.x,0,state.y);
     cameraTarget.set(state.x, .06, state.y);
     positionCamera();
-    const hit=state.hits.some(i=>state.time>=6+i&&state.time<6.6+i);
+    const stars = state.mode === 'three-stars';
+    const visibleIds = new Set();
+    for(const tower of state.towers || []) {
+      visibleIds.add(tower.id);
+      if(!towerObjects.has(tower.id)) towerObjects.set(tower.id,makeTower(tower));
+      const object=towerObjects.get(tower.id);
+      object.group.position.set(tower.x,0,tower.y);object.group.visible=true;
+      object.icon.position.set(tower.x,tower.active?.42:.14,tower.y);object.icon.visible=!tower.used;
+      object.baseMaterial.opacity=tower.active?.65:tower.used?.08:.2;
+      object.baseMaterial.emissiveIntensity=tower.active?1:.05;
+      object.beam.visible=tower.active;
+      object.outline.visible=!tower.used;
+      object.icon.material.opacity=tower.active?1:.45;
+      object.beam.scale.y=1+Math.sin(state.time*4+tower.id)*.08;
+    }
+    for(const [id,object] of towerObjects) if(!visibleIds.has(id)) {object.group.visible=false;object.icon.visible=false;}
+    effect.visible=stars&&Boolean(state.boss_effect);
+    effect.rotation.y=state.time*(state.boss_effect==='wind'?2:.3);
+    windRings.forEach(object=>{object.visible=state.boss_effect==='wind';});
+    rocks.forEach(object=>{object.visible=state.boss_effect==='earth';});
+    earthAttack.visible=stars&&state.boss_flash==='earth';
+    windAttack.visible=stars&&state.boss_flash==='wind';
+    const hit=state.mode==='three-stars'
+      ? state.hits.some(i=>state.time>=13+i*7&&state.time<13.6+i*7)
+      : state.hits.some(i=>state.time>=6+i&&state.time<6.6+i);
     playerMaterial.color.set(hit?'#ff6470':'#93f1dc');
     bands.forEach(({area,number})=>{area.visible=false;number.visible=false;});
     for(const t of state.telegraphs) {
