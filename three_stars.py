@@ -11,7 +11,7 @@ PHASE_DURATION = 7.0
 PHASE_STARTS = tuple(FIRST_PHASE_START + i * PHASE_DURATION for i in range(3))
 PHASE_CHECKS = tuple(start + PHASE_DURATION for start in PHASE_STARTS)
 ELEMENTS = ("fire", "lightning", "ice")
-TOWER_DISTANCE = .70
+TOWER_DISTANCE = .54
 TOWER_RADIUS = .12
 
 
@@ -56,14 +56,15 @@ class ThreeStarsGame:
         self.effects = []
         self.active_wave = 0
         self.expected_tower = None
-        self.towers = self.make_towers(0)
+        self.towers = self.make_towers(ELEMENTS)
 
-    def make_towers(self, rotation):
+    def make_towers(self, element_order):
         towers = []
         # Three contiguous towers per attribute, in clockwise groups.
         for i in range(9):
-            angle = math.radians(-90 + i * 40 + rotation)
-            towers.append({"id": i, "element": ELEMENTS[i // 3],
+            # North lies in the gap; tower 0 is 20 degrees clockwise from A.
+            angle = math.radians(-90 + 20 + i * 40)
+            towers.append({"id": i, "element": element_order[i // 3],
                            "x": math.cos(angle) * TOWER_DISTANCE,
                            "y": math.sin(angle) * TOWER_DISTANCE,
                            "radius": TOWER_RADIUS})
@@ -73,7 +74,7 @@ class ThreeStarsGame:
         self.reset()
         self.started = self.running = True
         self.initial_debuff = self.rng.choice([None, *ELEMENTS]) if debuff == "random" else (None if debuff == "none" else debuff)
-        self.towers = self.make_towers(self.rng.randrange(9) * 40)
+        self.towers = self.make_towers(self.rng.sample(list(ELEMENTS), 3))
         self.extra_elements = self.rng.sample(list(ELEMENTS), 3)
         for extra in self.extra_elements:
             active = []
@@ -164,7 +165,7 @@ class ThreeStarsGame:
                 "debuff_assigned": self.started and self.time + 1e-9 >= COUNTDOWN_END,
                 "resolved": self.resolved, "hits": self.hits, "results": self.results,
                 "towers": [{**tower, "active": tower["id"] in active, "used": False} for tower in self.towers],
-                "boss_effect": effect, "boss_flash": flash,
+                "boss_effect": effect, "boss_flash": flash, "boss_attack_radius": TOWER_DISTANCE,
                 "telegraphs": [], "angles": []}
 
 

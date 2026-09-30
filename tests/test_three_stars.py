@@ -2,7 +2,7 @@ import unittest
 import math
 import random
 
-from three_stars import ELEMENTS, PHASE_CHECKS, PHASE_STARTS, ThreeStarsGame, due_checks, timeline_at
+from three_stars import ELEMENTS, PHASE_CHECKS, PHASE_STARTS, TOWER_DISTANCE, ThreeStarsGame, due_checks, timeline_at
 
 
 class ThreeStarsTimelineTests(unittest.TestCase):
@@ -32,6 +32,19 @@ class ThreeStarsTimelineTests(unittest.TestCase):
 
 
 class ThreeStarsMechanicTests(unittest.TestCase):
+    def test_fixed_north_gap_with_random_attribute_groups(self):
+        orders = set()
+        for seed in range(40):
+            game = ThreeStarsGame(random.Random(seed))
+            game.start()
+            orders.add(tuple(t['element'] for t in game.towers[::3]))
+            for i, tower in enumerate(game.towers):
+                angle = math.radians(-70 + i * 40)
+                self.assertAlmostEqual(tower['x'], math.cos(angle) * .54)
+                self.assertAlmostEqual(tower['y'], math.sin(angle) * .54)
+            self.assertAlmostEqual(game.state()['boss_attack_radius'], .54)
+        self.assertEqual(len(orders), 6)
+
     def test_nine_towers_four_lit_and_unique_extras(self):
         for seed in range(40):
             game = ThreeStarsGame(random.Random(seed))
@@ -88,8 +101,8 @@ class ThreeStarsMechanicTests(unittest.TestCase):
                     game.update(6)
                     for wave in range(3):
                         tower = game.towers[game.expected_tower]
-                        radius = .70 + (.06 if attack == 'earth' else -.06)
-                        game.x,game.y = tower['x'] * radius / .70,tower['y'] * radius / .70
+                        radius = TOWER_DISTANCE + (.06 if attack == 'earth' else -.06)
+                        game.x,game.y = tower['x'] * radius / TOWER_DISTANCE,tower['y'] * radius / TOWER_DISTANCE
                         game.update(7)
                     self.assertEqual(game.hits,[], (seed,debuff,attack,game.results))
                     self.assertEqual(len(game.results),3)
@@ -105,6 +118,7 @@ class ThreeStarsMechanicTests(unittest.TestCase):
             self.assertEqual(game.results[0]['reasons'],[attack])
         game = ThreeStarsGame(random.Random(3))
         game.start('fire','wind')
+        game.x, game.y = 0, 0
         game.update(13)
         self.assertEqual(game.results[0]['reasons'],['no_tower'])
 

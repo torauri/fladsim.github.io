@@ -120,7 +120,7 @@ export function createArena(canvas) {
     const beamMaterial = new THREE.MeshBasicMaterial({color,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide});
     const beam = mesh(new THREE.CylinderGeometry(tower.radius*.8,tower.radius,.34,24,1,true),beamMaterial,group);beam.position.y=.19;
     const icon = label(elementLabels[tower.element],color,.085);icon.position.set(tower.x,.40,tower.y);
-    return {group,baseMaterial,beam,outline,icon};
+    return {group,baseMaterial,beam,outline,icon,element:tower.element};
   }
   const effect = new THREE.Group();scene.add(effect);
   const windMaterial = new THREE.MeshBasicMaterial({color:'#83f3d3',transparent:true,opacity:.8});
@@ -129,8 +129,9 @@ export function createArena(canvas) {
   const rocks = Array.from({length:7},(_,i)=>{const object=mesh(new THREE.OctahedronGeometry(.035),earthMaterial,effect);const a=i*Math.PI*2/7;object.position.set(Math.cos(a)*.20,.1+(i%3)*.08,Math.sin(a)*.20);return object;});
   effect.visible=false;
   const attackMaterial = new THREE.MeshBasicMaterial({color:'#ff755f',transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide});
-  const earthAttack = mesh(new THREE.CircleGeometry(.70,128),attackMaterial);earthAttack.rotation.x=-Math.PI/2;earthAttack.position.y=.032;earthAttack.visible=false;
-  const windAttack = mesh(new THREE.RingGeometry(.70,1,128),attackMaterial.clone());windAttack.rotation.x=-Math.PI/2;windAttack.position.y=.032;windAttack.visible=false;
+  let attackRadius = null;
+  const earthAttack = mesh(new THREE.BufferGeometry(),attackMaterial);earthAttack.rotation.x=-Math.PI/2;earthAttack.position.y=.032;earthAttack.visible=false;
+  const windAttack = mesh(new THREE.BufferGeometry(),attackMaterial.clone());windAttack.rotation.x=-Math.PI/2;windAttack.position.y=.032;windAttack.visible=false;
   function draw(state) {
     player.position.set(state.x,0,state.y);
     cameraTarget.set(state.x, .06, state.y);
@@ -141,6 +142,14 @@ export function createArena(canvas) {
       visibleIds.add(tower.id);
       if(!towerObjects.has(tower.id)) towerObjects.set(tower.id,makeTower(tower));
       const object=towerObjects.get(tower.id);
+      if(object.element!==tower.element) {
+        const color=elementColors[tower.element];
+        object.baseMaterial.color.set(color);object.baseMaterial.emissive.set(color);
+        object.beam.material.color.set(color);object.outline.material.color.set(color);
+        scene.remove(object.icon);object.icon.material.map.dispose();object.icon.material.dispose();
+        object.icon=label(elementLabels[tower.element],color,.085);
+        object.element=tower.element;
+      }
       object.group.position.set(tower.x,0,tower.y);object.group.visible=true;
       object.icon.position.set(tower.x,tower.active?.42:.14,tower.y);object.icon.visible=!tower.used;
       object.baseMaterial.opacity=tower.active?.65:tower.used?.08:.2;
@@ -155,6 +164,12 @@ export function createArena(canvas) {
     effect.rotation.y=state.time*(state.boss_effect==='wind'?2:.3);
     windRings.forEach(object=>{object.visible=state.boss_effect==='wind';});
     rocks.forEach(object=>{object.visible=state.boss_effect==='earth';});
+    if(stars&&attackRadius!==state.boss_attack_radius) {
+      attackRadius=state.boss_attack_radius;
+      earthAttack.geometry.dispose();windAttack.geometry.dispose();
+      earthAttack.geometry=new THREE.CircleGeometry(attackRadius,128);
+      windAttack.geometry=new THREE.RingGeometry(attackRadius,1,128);
+    }
     earthAttack.visible=stars&&state.boss_flash==='earth';
     windAttack.visible=stars&&state.boss_flash==='wind';
     const hit=state.mode==='three-stars'
