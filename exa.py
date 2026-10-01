@@ -45,7 +45,8 @@ class ExaGame:
                                   'start_at':warning_at + WARNING})
             for lane_index, lane in enumerate(LANES[index]):
                 for step in range(STEPS):
-                    position = -START_DISTANCE + step * STEP_DISTANCE
+                    # The warning stays at the start line; damage starts one position ahead.
+                    position = -START_DISTANCE + (step + 1) * STEP_DISTANCE
                     x,y = (lane,position) if axis == 'vertical' else (-position,lane)
                     self.events.append({'id':len(self.events), 'x':x, 'y':y, 'radius':RADIUS,
                                         'step':step, 'axis':axis, 'lane':lane_index, 'wave':wave,
@@ -90,10 +91,12 @@ class ExaGame:
             attack = event['at'] <= now < event['at'] + BLAST_DURATION
             initial_warning = event['step'] == 0 and warning_start <= now < event['at']
             if phase != 'result' and (initial_warning or attack):
-                # Damage keeps the original coordinates; the blast trails by one circle.
-                effect_x = event['x'] + (STEP_DISTANCE if attack and event['axis']=='horizontal' else 0)
-                effect_y = event['y'] - (STEP_DISTANCE if attack and event['axis']=='vertical' else 0)
-                circles.append({**event, 'attack':attack, 'effect_x':effect_x, 'effect_y':effect_y})
+                # The blast trails damage by one position, beginning at the warning location.
+                effect_x = event['x'] + (STEP_DISTANCE if event['axis']=='horizontal' else 0)
+                effect_y = event['y'] - (STEP_DISTANCE if event['axis']=='vertical' else 0)
+                circles.append({**event, 'x':event['x'] if attack else effect_x,
+                                'y':event['y'] if attack else effect_y,
+                                'attack':attack, 'effect_x':effect_x, 'effect_y':effect_y})
         revealed = [dict(p, wave=i+1) for i,p in enumerate(self.patterns) if p['warning_at'] <= now]
         return {'mode':'exa', 'x':self.x,'y':self.y,'time':self.time,
                 'phase':phase,'running':self.running,'paused':self.paused,'started':self.started,

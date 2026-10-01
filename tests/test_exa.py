@@ -1,7 +1,7 @@
 import math
 import random
 import unittest
-from exa import LANES, RADIUS, START_DISTANCE, STEPS, ExaGame
+from exa import LANES, RADIUS, START_DISTANCE, STEP_DISTANCE, STEPS, ExaGame
 
 class ExaTests(unittest.TestCase):
     def test_effect_trails_one_circle_but_damage_and_warning_stay_in_place(self):
@@ -40,13 +40,40 @@ class ExaTests(unittest.TestCase):
                 self.assertEqual({e[coordinate] for e in events},set(LANES[pattern['pattern']]))
                 self.assertAlmostEqual(events[1]['at']-events[0]['at'],.4)
                 if pattern['axis']=='horizontal':
-                    self.assertAlmostEqual(events[0]['x']-RADIUS,1)
+                    self.assertAlmostEqual(events[0]['x'],START_DISTANCE-STEP_DISTANCE)
                     self.assertGreater(events[0]['x'],events[-1]['x'])
                     self.assertLessEqual(events[-1]['x']+RADIUS,-1)
                 else:
-                    self.assertAlmostEqual(events[0]['y']+RADIUS,-1)
+                    self.assertAlmostEqual(events[0]['y'],-START_DISTANCE+STEP_DISTANCE)
                     self.assertGreaterEqual(events[-1]['y']-RADIUS,1)
         self.assertEqual(len(orders),6)
+
+    def test_first_blast_matches_warning_and_damage_starts_ahead(self):
+        game=ExaGame(random.Random(3)); game.start()
+        for wave,pattern in enumerate(game.patterns):
+            game.update(pattern['warning_at']-game.time)
+            warnings={c['lane']:c for c in game.state()['circles'] if c['wave']==wave and not c['attack']}
+            self.assertEqual(len(warnings),2)
+            coordinate='y' if pattern['axis']=='vertical' else 'x'
+            origin=-START_DISTANCE if coordinate=='y' else START_DISTANCE
+            for warning in warnings.values():
+                self.assertAlmostEqual(warning[coordinate],origin)
+            game.update(pattern['start_at']-game.time)
+            attacks=[c for c in game.state()['circles'] if c['wave']==wave and c['attack']]
+            self.assertEqual(len(attacks),2)
+            for attack in attacks:
+                self.assertAlmostEqual(attack['effect_'+coordinate],warnings[attack['lane']][coordinate])
+                expected=origin+STEP_DISTANCE if coordinate=='y' else origin-STEP_DISTANCE
+                self.assertAlmostEqual(attack[coordinate],expected)
+
+    def test_first_damage_reaches_inside_from_next_position(self):
+        game=ExaGame(random.Random(3)); game.start()
+        event=game.events[0]
+        game.x,game.y=event['x'],-.8
+        game.update(event['at']-.01)
+        self.assertNotIn(event['id'],game.hits)
+        game.update(.02)
+        self.assertIn(event['id'],game.hits)
 
     def test_warnings_every_two_seconds_and_three_second_delay(self):
         game=ExaGame(random.Random(0)); game.start()
