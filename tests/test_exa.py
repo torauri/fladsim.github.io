@@ -1,7 +1,7 @@
 import math
 import random
 import unittest
-from exa import LANES, ExaGame
+from exa import LANES, RADIUS, START_DISTANCE, STEPS, ExaGame
 
 class ExaTests(unittest.TestCase):
     def test_six_waves_direction_patterns_and_timing(self):
@@ -18,13 +18,17 @@ class ExaTests(unittest.TestCase):
                 orders.add(order)
             for wave,pattern in enumerate(game.patterns):
                 events=[e for e in game.events if e['wave']==wave]
-                self.assertEqual(len(events),16)
+                self.assertEqual(len(events),STEPS*2)
                 coordinate='x' if pattern['axis']=='vertical' else 'y'
                 self.assertEqual({e[coordinate] for e in events},set(LANES[pattern['pattern']]))
                 self.assertAlmostEqual(events[1]['at']-events[0]['at'],.5)
                 if pattern['axis']=='horizontal':
-                    self.assertEqual(events[0]['x'],1.05)
+                    self.assertAlmostEqual(events[0]['x']-RADIUS,1)
                     self.assertGreater(events[0]['x'],events[-1]['x'])
+                    self.assertLessEqual(events[-1]['x']+RADIUS,-1)
+                else:
+                    self.assertAlmostEqual(events[0]['y']+RADIUS,-1)
+                    self.assertGreaterEqual(events[-1]['y']-RADIUS,1)
         self.assertEqual(len(orders),6)
 
     def test_warnings_every_two_seconds_and_four_second_delay(self):
@@ -42,8 +46,8 @@ class ExaTests(unittest.TestCase):
 
     def test_late_entry_hits_only_once(self):
         game=ExaGame(random.Random(1)); game.start()
-        event=game.events[0]
-        game.update(7.1)
+        event=game.events[3]
+        game.update(event['at']+.1)
         self.assertEqual(game.hits,[])
         game.x,game.y=event['x'],event['y']+.1
         game.update(.01)
@@ -59,7 +63,7 @@ class ExaTests(unittest.TestCase):
         self.assertAlmostEqual(game.x,.275)
         game.update(30,1,1)
         self.assertLessEqual(math.hypot(game.x,game.y),.975+1e-9)
-        self.assertEqual(game.resolved,96)
+        self.assertEqual(game.resolved,6*2*STEPS)
         self.assertEqual(game.state()['phase'],'result')
         self.assertEqual(game.state()['circles'],[])
         game.reset()

@@ -7,8 +7,9 @@ from game import PLAYER_RADIUS, SPEED
 
 RADIUS = .32
 LANES = ((-.55, .55), (-.90, .22), (-.22, .90))
-STEPS = 8
+START_DISTANCE = 1 + RADIUS
 STEP_DISTANCE = .30
+STEPS = math.ceil(2 * START_DISTANCE / STEP_DISTANCE) + 1
 COUNTDOWN = 3
 WARNING = 4
 WAVE_INTERVAL = 2
@@ -44,7 +45,7 @@ class ExaGame:
                                   'start_at':warning_at + WARNING})
             for lane_index, lane in enumerate(LANES[index]):
                 for step in range(STEPS):
-                    position = -1.05 + step * STEP_DISTANCE
+                    position = -START_DISTANCE + step * STEP_DISTANCE
                     x,y = (lane,position) if axis == 'vertical' else (-position,lane)
                     self.events.append({'id':len(self.events), 'x':x, 'y':y, 'radius':RADIUS,
                                         'step':step, 'axis':axis, 'lane':lane_index, 'wave':wave,

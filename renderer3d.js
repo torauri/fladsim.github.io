@@ -8,7 +8,8 @@ export function createArena(canvas, options = {}) {
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1.32, 1.32, 1.32, -1.32, .01, 20);
   const initialElevation = Math.atan2(3.3, 2.3);
-  let azimuth = 0, elevation = initialElevation;
+  const initialAzimuth = options.mode==='exa'?-Math.PI/4:0;
+  let azimuth = initialAzimuth, elevation = initialElevation;
   const topElevation = Math.PI / 2 - .001;
   const minElevation = Math.PI / 6;
   let obliqueElevation = elevation;
@@ -116,8 +117,19 @@ export function createArena(canvas, options = {}) {
     const floor=mesh(new THREE.CircleGeometry(event.radius,64),material,group);floor.rotation.x=-Math.PI/2;floor.position.y=.025;
     const edge=ring(event.radius,'#ffd39a',.03,.005,group);
     const blast=mesh(new THREE.CylinderGeometry(event.radius*.65,event.radius,.45,32,1,true),material.clone(),group);blast.position.y=.24;
-    const direction=new THREE.Vector3(event.axis==='vertical'?0:-1,0,event.axis==='vertical'?1:0);
-    const arrow=new THREE.ArrowHelper(direction,new THREE.Vector3(event.x,.06,event.y),.2,0xffe0ac,.07,.06);scene.add(arrow);
+    const positions=[];
+    for(const offset of [-.09,.09]) {
+      for(const [a,b] of [[[-.14,offset-.07],[0,offset+.07]],[[0,offset+.07],[.14,offset-.07]]]) {
+        const dx=b[0]-a[0], dz=b[1]-a[1], length=Math.hypot(dx,dz);
+        const nx=-dz/length*.025,nz=dx/length*.025;
+        const corners=[[a[0]+nx,a[1]+nz],[a[0]-nx,a[1]-nz],[b[0]-nx,b[1]-nz],[b[0]+nx,b[1]+nz]];
+        for(const index of [0,1,2,0,2,3]) positions.push(corners[index][0],0,corners[index][1]);
+      }
+    }
+    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    const arrow=mesh(geometry,new THREE.MeshBasicMaterial({color:'#fff0c4',side:THREE.DoubleSide,depthWrite:false}));
+    arrow.rotation.y=event.axis==='vertical'?0:-Math.PI/2;
+    arrow.position.set(event.x,.06,event.y);
     return {group,material,edge,blast,arrow};
   }
   const elementColors = {fire:'#ff9860',lightning:'#ffe16b',ice:'#8ce6ff'};
@@ -219,7 +231,7 @@ export function createArena(canvas, options = {}) {
   return {
     draw,
     resize() {const bounds=canvas.getBoundingClientRect();renderer.setSize(bounds.width,bounds.height,false);camera.left=-1.32* bounds.width/bounds.height;camera.right=1.32*bounds.width/bounds.height;camera.updateProjectionMatrix();},
-    resetCamera() {azimuth=0;elevation=obliqueElevation=initialElevation;positionCamera();},
+    resetCamera() {azimuth=initialAzimuth;elevation=obliqueElevation=initialElevation;positionCamera();},
     movement(dx,dy) {return {dx:dx*Math.cos(azimuth)+dy*Math.sin(azimuth),dy:dy*Math.cos(azimuth)-dx*Math.sin(azimuth)};},
     rotate(delta) {azimuth+=delta;positionCamera();},
     orbit(horizontal, vertical) {
