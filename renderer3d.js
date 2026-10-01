@@ -7,7 +7,7 @@ export function createArena(canvas, options = {}) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1.32, 1.32, 1.32, -1.32, .01, 20);
-  camera.zoom = options.mode==='exa'?1.15:1;
+  camera.zoom = 1.3;
   camera.updateProjectionMatrix();
   const initialElevation = Math.atan2(3.3, 2.3);
   const initialAzimuth = options.mode==='exa'?-Math.PI/4:0;
@@ -232,7 +232,12 @@ export function createArena(canvas, options = {}) {
   }
   return {
     draw,
-    resize() {const bounds=canvas.getBoundingClientRect();renderer.setSize(bounds.width,bounds.height,false);camera.left=-1.32* bounds.width/bounds.height;camera.right=1.32*bounds.width/bounds.height;camera.updateProjectionMatrix();},
+    resize() {
+      const width=canvas.getBoundingClientRect().width;
+      // Use the same square viewport and projection on every screen size.
+      canvas.style.height=`${width}px`;
+      renderer.setSize(width,width,false);
+    },
     resetCamera() {azimuth=initialAzimuth;elevation=obliqueElevation=initialElevation;positionCamera();},
     movement(dx,dy) {return {dx:dx*Math.cos(azimuth)+dy*Math.sin(azimuth),dy:dy*Math.cos(azimuth)-dx*Math.sin(azimuth)};},
     rotate(delta) {azimuth+=delta;positionCamera();},

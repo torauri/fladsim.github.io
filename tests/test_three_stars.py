@@ -145,7 +145,7 @@ class ThreeStarsMechanicTests(unittest.TestCase):
         game = ThreeStarsGame(random.Random(2))
         game.start()
         game.update(1,.5,0)
-        self.assertAlmostEqual(game.x,.20625)
+        self.assertAlmostEqual(game.x,.1546875)
         game.paused = True
         game.update(30,1,0)
         self.assertAlmostEqual(game.time,1)

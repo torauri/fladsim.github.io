@@ -106,7 +106,7 @@ class MechanicTests(unittest.TestCase):
         slow, full = Game(), Game()
         slow.update(.1, .5, 0)
         full.update(.1, 1, 0)
-        self.assertAlmostEqual(full.x, .04125)
+        self.assertAlmostEqual(full.x, .0309375)
         self.assertAlmostEqual(slow.x, full.x / 2)
         # Releasing the stick stops movement immediately.
         slow.update(.1, .5, 0)

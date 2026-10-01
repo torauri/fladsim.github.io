@@ -6,7 +6,7 @@ import random
 BOSS_RADIUS = 0.46
 BAND_WIDTH = 0.5
 PLAYER_RADIUS = 0.025
-SPEED = 0.4125
+SPEED = 0.309375
 
 
 def band_distance(x, y, angle):

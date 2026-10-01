@@ -10,8 +10,8 @@ class ExaTests(unittest.TestCase):
             game=ExaGame(random.Random(seed))
             game.start()
             self.assertEqual([p['axis'] for p in game.patterns],['vertical','horizontal']*3)
-            self.assertEqual([p['warning_at'] for p in game.patterns],[3,4.5,6,7.5,9,10.5])
-            self.assertEqual([p['start_at'] for p in game.patterns],[6,7.5,9,10.5,12,13.5])
+            self.assertEqual([p['warning_at'] for p in game.patterns],[3,5,7,9,11,13])
+            self.assertEqual([p['start_at'] for p in game.patterns],[6,8,10,12,14,16])
             for axis in ('vertical','horizontal'):
                 order=tuple(p['pattern'] for p in game.patterns if p['axis']==axis)
                 self.assertEqual(set(order),{0,1,2})
@@ -21,7 +21,7 @@ class ExaTests(unittest.TestCase):
                 self.assertEqual(len(events),STEPS*2)
                 coordinate='x' if pattern['axis']=='vertical' else 'y'
                 self.assertEqual({e[coordinate] for e in events},set(LANES[pattern['pattern']]))
-                self.assertAlmostEqual(events[1]['at']-events[0]['at'],.3)
+                self.assertAlmostEqual(events[1]['at']-events[0]['at'],.5)
                 if pattern['axis']=='horizontal':
                     self.assertAlmostEqual(events[0]['x']-RADIUS,1)
                     self.assertGreater(events[0]['x'],events[-1]['x'])
@@ -31,16 +31,16 @@ class ExaTests(unittest.TestCase):
                     self.assertGreaterEqual(events[-1]['y']-RADIUS,1)
         self.assertEqual(len(orders),6)
 
-    def test_warnings_every_one_point_five_seconds_and_three_second_delay(self):
+    def test_warnings_every_two_seconds_and_three_second_delay(self):
         game=ExaGame(random.Random(0)); game.start()
         game.update(2.99)
         self.assertEqual(game.state()['circles'],[])
         game.update(.01)
         self.assertEqual(len(game.state()['circles']),2)
-        game.update(1.5)
+        game.update(2)
         self.assertEqual(len(game.state()['circles']),4)
         self.assertFalse(any(c['attack'] for c in game.state()['circles']))
-        game.update(1.5)
+        game.update(1)
         self.assertEqual({c['wave'] for c in game.state()['circles'] if c['attack']},{0})
         self.assertEqual(game.resolved,2)
 
@@ -67,7 +67,7 @@ class ExaTests(unittest.TestCase):
         game.paused=True; game.update(30,1,0)
         self.assertEqual(game.time,0)
         game.paused=False; game.update(1,.5,0)
-        self.assertAlmostEqual(game.x,.20625)
+        self.assertAlmostEqual(game.x,.1546875)
         game.update(30,1,1)
         self.assertLessEqual(math.hypot(game.x,game.y),.975+1e-9)
         self.assertEqual(game.resolved,6*2*STEPS)
