@@ -174,7 +174,7 @@ new ResizeObserver(resize).observe(canvas);
 resize();
 async function boot() {
   try {
-    const { createArena } = await import('./renderer3d.js');
+    const { createArena } = await import('./renderer3d.js?v=camera-150');
     world = createArena(canvas, {mode:isExa?'exa':'default'});
     resize();
     document.querySelectorAll('.camera-controls button').forEach(button => {button.disabled = false;});
