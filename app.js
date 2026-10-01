@@ -2,6 +2,7 @@
 const canvas = document.querySelector('#arena');
 const $ = (id) => document.getElementById(id);
 const isThreeStars = document.body?.dataset.simulator === 'three-stars';
+const isExa = document.body?.dataset.simulator === 'exa';
 let state = {x: 0, y: .72, telegraphs: [], angles: [], hits: [], resolved: 0, time: 0, phase: 'ready', paused: false, running: false};
 let command, world, lastTime, held = new Set(), canvasPointer = null;
 const cameraStick = new VirtualStick($('camera-stick'));
@@ -35,6 +36,7 @@ $('view').addEventListener('click', () => {
 $('camera-left').addEventListener('click', () => {world.rotate(-Math.PI / 4); canvas.focus({preventScroll: true}); draw();});
 $('camera-right').addEventListener('click', () => {world.rotate(Math.PI / 4); canvas.focus({preventScroll: true}); draw();});
 function updateUI() {
+  if (isExa) return updateExaUI();
   if (isThreeStars) return updateThreeStarsUI();
   const messages = {
     ready: ['準備完了', 'フィールド上で位置を調整して、練習をはじめましょう。'],
@@ -54,6 +56,18 @@ function updateUI() {
   [...$('steps').children].forEach((el, i) => {
     el.className = state.hits.includes(i) ? 'hit' : state.resolved > i ? 'done' : state.angles.length && state.time >= i ? 'shown' : '';
   });
+}
+function updateExaUI() {
+  const messages={ready:['準備完了','円が通過した直後の場所へ移動しましょう。'],countdown:[`開始まで ${state.countdown}`,'北西・北東からの円を確認しましょう。'],warning:['最初の円を確認','矢印の方向へ円が連続して進みます。'],attack:['エクサを回避',`着弾 ${state.resolved} / ${state.total}。爆発した円の跡へ移動しましょう。`],result:[state.hits.length?'練習終了：被弾あり':'回避成功！',`全 ${state.total} 回の着弾が終了しました。`]};
+  const [title,message]=messages[state.phase];
+  $('phase').textContent=state.paused?'一時停止中':title;
+  $('message').textContent=state.paused?'再開すると同じ位置・時間から続けます。':message;
+  $('seconds').textContent=state.time.toFixed(1).padStart(4,'0');
+  $('hit-count').textContent=`被弾 ${state.hits.length}`;
+  $('start').innerHTML=(state.started?'もう一度はじめる':'練習をはじめる')+'<span>→</span>';
+  $('pause').disabled=!state.running;$('pause').textContent=state.paused?'再開':'一時停止';
+  $('countdown-overlay').hidden=state.phase!=='countdown';$('countdown-overlay').textContent=state.countdown;
+  $('pattern-status').textContent=Object.entries(state.patterns).map(([axis,index])=>`${axis==='vertical'?'縦':'横'}：パターン${index+1}`).join(' ／ ') || '6種類の通過位置';
 }
 function updateThreeStarsUI() {
   const elements = {fire:'炎',lightning:'雷',ice:'氷'};
@@ -116,7 +130,7 @@ $('start').addEventListener('click', () => {
   clearInput();
   world.resetCamera();
   $('view').textContent = '真上から見る';
-  call('start', isThreeStars ? {debuff:$('debuff-choice').value,attack:$('attack-choice').value} : { direction: $('direction').value });
+  call('start', isExa ? {direction:'sequential',pattern:$('pattern').value,tempo:$('tempo').value} : isThreeStars ? {debuff:$('debuff-choice').value,attack:$('attack-choice').value} : { direction: $('direction').value });
   canvas.focus({ preventScroll: true });
   draw();
 });
@@ -139,17 +153,17 @@ resize();
 async function boot() {
   try {
     const { createArena } = await import('./renderer3d.js');
-    world = createArena(canvas);
+    world = createArena(canvas, {mode:isExa?'exa':'default'});
     resize();
     document.querySelectorAll('.camera-controls button').forEach(button => {button.disabled = false;});
     if (typeof loadPyodide !== 'function') throw new Error('Pyodide CDN unavailable');
     const pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/' });
-    if (isThreeStars) {
+    if (isThreeStars || isExa) {
       const dependency = await fetch('./game.py');
       if (!dependency.ok) throw new Error(`game.py: ${dependency.status}`);
       pyodide.FS.writeFile('game.py',await dependency.text());
     }
-    const pythonFile=isThreeStars?'three_stars.py':'game.py';
+    const pythonFile=isExa?'exa.py':isThreeStars?'three_stars.py':'game.py';
     const response = await fetch('./'+pythonFile);
     if (!response.ok) throw new Error(`${pythonFile}: ${response.status}`);
     await pyodide.runPythonAsync(await response.text());

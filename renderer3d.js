@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
 // Python x/y maps to world x/z. Arena radius is one world unit.
-export function createArena(canvas) {
+export function createArena(canvas, options = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setClearColor('#101b23');
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
@@ -54,8 +54,8 @@ export function createArena(canvas) {
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthTest:false}));
     sprite.scale.set(scale,scale,1); scene.add(sprite); return sprite;
   }
-  const labels = ['A','2','B','3','C','4','D','1'];
-  const colors = ['#cf81ee','#ebd88b','#e97c7c','#ebd88b','#83b8f2','#ebd88b','#93d6a4','#ebd88b'];
+  const labels = options.mode==='exa'?['1','A','2','B','3','D','4','C']:['A','2','B','3','C','4','D','1'];
+  const colors = options.mode==='exa'?['#e97c7c','#e97c7c','#ebd88b','#ebd88b','#83b8f2','#cf81ee','#cf81ee','#83b8f2']:['#cf81ee','#ebd88b','#e97c7c','#ebd88b','#83b8f2','#ebd88b','#93d6a4','#ebd88b'];
   labels.forEach((text,i) => {
     const angle = -Math.PI/2 + i * Math.PI/4;
     const x = Math.cos(angle)*.88, z = Math.sin(angle)*.88;
@@ -109,6 +109,17 @@ export function createArena(canvas) {
     return {area,number,angle:null};
   });
   const towerObjects = new Map();
+  const exaObjects = new Map();
+  function makeExa(event) {
+    const group=new THREE.Group();scene.add(group);group.position.set(event.x,0,event.y);
+    const material=new THREE.MeshBasicMaterial({color:'#efa657',transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false});
+    const floor=mesh(new THREE.CircleGeometry(event.radius,64),material,group);floor.rotation.x=-Math.PI/2;floor.position.y=.025;
+    const edge=ring(event.radius,'#ffd39a',.03,.005,group);
+    const blast=mesh(new THREE.CylinderGeometry(event.radius*.65,event.radius,.45,32,1,true),material.clone(),group);blast.position.y=.24;
+    const direction=new THREE.Vector3(event.axis==='vertical'?0:1,0,event.axis==='vertical'?1:0);
+    const arrow=new THREE.ArrowHelper(direction,new THREE.Vector3(event.x,.06,event.y),.2,0xffe0ac,.07,.06);scene.add(arrow);
+    return {group,material,edge,blast,arrow};
+  }
   const elementColors = {fire:'#ff9860',lightning:'#ffe16b',ice:'#8ce6ff'};
   const elementLabels = {fire:'炎',lightning:'雷',ice:'氷'};
   function makeTower(tower) {
@@ -139,6 +150,18 @@ export function createArena(canvas) {
     cameraTarget.set(state.x, .06, state.y);
     positionCamera();
     const stars = state.mode === 'three-stars';
+    const exaVisible=new Set();
+    for(const circle of state.circles || []) {
+      exaVisible.add(circle.id);
+      if(!exaObjects.has(circle.id)) exaObjects.set(circle.id,makeExa(circle));
+      const object=exaObjects.get(circle.id);
+      object.group.visible=true;object.group.position.set(circle.x,0,circle.y);
+      object.arrow.position.set(circle.x,.06,circle.y);object.arrow.visible=!circle.attack;
+      object.material.color.set(circle.attack?'#ff6855':'#efa657');object.material.opacity=circle.attack?.7:.25;
+      object.edge.material.color.set(circle.attack?'#ffb56b':'#ffd39a');object.blast.visible=circle.attack;
+      object.blast.material.color.set('#ffb35c');
+    }
+    for(const [id,object] of exaObjects) if(!exaVisible.has(id)){object.group.visible=false;object.arrow.visible=false;}
     const visibleIds = new Set();
     for(const tower of state.towers || []) {
       visibleIds.add(tower.id);
@@ -179,7 +202,7 @@ export function createArena(canvas) {
     }
     earthAttack.visible=stars&&state.boss_flash==='earth';
     windAttack.visible=stars&&state.boss_flash==='wind';
-    const hit=state.mode==='three-stars'
+    const hit=state.mode==='exa'?state.hit_flash:state.mode==='three-stars'
       ? state.hits.some(i=>state.time>=13+i*7&&state.time<13.6+i*7)
       : state.hits.some(i=>state.time>=6+i&&state.time<6.6+i);
     playerMaterial.color.set(hit?'#ff6470':'#93f1dc');
