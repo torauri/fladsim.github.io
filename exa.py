@@ -13,7 +13,7 @@ STEPS = math.ceil(2 * START_DISTANCE / STEP_DISTANCE) + 1
 COUNTDOWN = 3
 WARNING = 4
 WAVE_INTERVAL = 2
-INTERVAL = .5
+INTERVAL = .3
 BLAST_DURATION = .35
 
 
@@ -86,9 +86,10 @@ class ExaGame:
         phase = 'ready' if not self.started else 'countdown' if now < COUNTDOWN else 'warning' if now < COUNTDOWN+WARNING else 'attack' if self.running else 'result'
         circles = []
         for event in self.events:
-            warning_start = event['at'] - (WARNING if event['step']==0 else self.interval)
+            warning_start = event['at'] - WARNING
             attack = event['at'] <= now < event['at'] + BLAST_DURATION
-            if phase != 'result' and (warning_start <= now < event['at'] or attack):
+            initial_warning = event['step'] == 0 and warning_start <= now < event['at']
+            if phase != 'result' and (initial_warning or attack):
                 circles.append({**event, 'attack':attack})
         revealed = [dict(p, wave=i+1) for i,p in enumerate(self.patterns) if p['warning_at'] <= now]
         return {'mode':'exa', 'x':self.x,'y':self.y,'time':self.time,
