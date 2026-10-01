@@ -169,7 +169,7 @@ export function createArena(canvas, options = {}) {
       exaVisible.add(circle.id);
       if(!exaObjects.has(circle.id)) exaObjects.set(circle.id,makeExa(circle));
       const object=exaObjects.get(circle.id);
-      object.group.visible=true;object.group.position.set(circle.x,0,circle.y);
+      object.group.visible=true;object.group.position.set(circle.effect_x,0,circle.effect_y);
       object.arrow.position.set(circle.x,.06,circle.y);object.arrow.visible=!circle.attack;
       object.material.color.set(circle.attack?'#ff6855':'#efa657');object.material.opacity=circle.attack?.7:.25;
       object.edge.material.color.set(circle.attack?'#ffb56b':'#ffd39a');object.blast.visible=circle.attack;

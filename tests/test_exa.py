@@ -4,6 +4,23 @@ import unittest
 from exa import LANES, RADIUS, START_DISTANCE, STEPS, ExaGame
 
 class ExaTests(unittest.TestCase):
+    def test_effect_trails_one_circle_but_damage_and_warning_stay_in_place(self):
+        game=ExaGame(random.Random(3)); game.start()
+        game.update(3)
+        for circle in game.state()['circles']:
+            self.assertEqual((circle['effect_x'],circle['effect_y']),(circle['x'],circle['y']))
+        for wave in (0,1):
+            event=next(e for e in game.events if e['wave']==wave and e['step']==4 and e['lane']==0)
+            game.update(event['at']-game.time)
+            circle=next(c for c in game.state()['circles'] if c['id']==event['id'])
+            dx=.3 if event['axis']=='horizontal' else 0
+            dy=-.3 if event['axis']=='vertical' else 0
+            self.assertAlmostEqual(circle['effect_x'],event['x']+dx)
+            self.assertAlmostEqual(circle['effect_y'],event['y']+dy)
+            game.x,game.y=event['x'],event['y']
+            game.update(.01)
+            self.assertIn(event['id'],game.hits)
+
     def test_six_waves_direction_patterns_and_timing(self):
         orders=set()
         for seed in range(30):

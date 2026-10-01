@@ -90,7 +90,10 @@ class ExaGame:
             attack = event['at'] <= now < event['at'] + BLAST_DURATION
             initial_warning = event['step'] == 0 and warning_start <= now < event['at']
             if phase != 'result' and (initial_warning or attack):
-                circles.append({**event, 'attack':attack})
+                # Damage keeps the original coordinates; the blast trails by one circle.
+                effect_x = event['x'] + (STEP_DISTANCE if attack and event['axis']=='horizontal' else 0)
+                effect_y = event['y'] - (STEP_DISTANCE if attack and event['axis']=='vertical' else 0)
+                circles.append({**event, 'attack':attack, 'effect_x':effect_x, 'effect_y':effect_y})
         revealed = [dict(p, wave=i+1) for i,p in enumerate(self.patterns) if p['warning_at'] <= now]
         return {'mode':'exa', 'x':self.x,'y':self.y,'time':self.time,
                 'phase':phase,'running':self.running,'paused':self.paused,'started':self.started,
