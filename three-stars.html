@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10191f">
   <title>スリースターズ — FladSim 3D</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=gamepad-1">
   <link rel="stylesheet" href="three-stars.css">
   <script defer src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js"></script>
-  <script defer src="controls.js"></script>
-  <script defer src="app.js"></script>
+  <script defer src="controls.js?v=gamepad-1"></script>
+  <script defer src="app.js?v=gamepad-1"></script>
 </head>
 <body data-simulator="three-stars">
   <main>
@@ -30,11 +30,11 @@
           </div>
         </div>
         <div class="tower-legend"><span class="fire">● 炎</span><span class="lightning">● 雷</span><span class="ice">● 氷</span><span>光る4本に注目</span></div>
-        <div class="arena-footer"><span><i class="legend player"></i>あなた</span><span><i class="legend warning"></i>点灯中の塔</span><span class="north">A = 12時 / NORTH</span></div>
+        <p id="gamepad-status" class="gamepad-status" role="status" aria-live="polite">コントローラー：接続してボタンを押すと認識します。</p><div class="arena-footer"><span><i class="legend player"></i>あなた</span><span><i class="legend warning"></i>点灯中の塔</span><span class="north">A = 12時 / NORTH</span></div>
       </section>
       <aside>
         <section class="card status-card"><p class="eyebrow">SESSION</p><h2 id="phase">準備中</h2><p id="message" role="status" aria-live="polite">初回は読み込みに少し時間がかかります。</p><div class="timer"><span id="seconds">00.0</span><small>秒</small><span id="hit-count">失敗 0</span></div><div class="steps" id="steps" aria-label="フェーズの進行"><span>1</span><span>2</span><span>3</span></div><label for="debuff-choice">開始時のデバフ</label><select id="debuff-choice"><option value="random">ランダム</option><option value="fire">炎耐性低下</option><option value="lightning">雷耐性低下</option><option value="ice">氷耐性低下</option><option value="none">なし（無職）</option></select><label for="attack-choice">ボスの攻撃</label><select id="attack-choice"><option value="random">ランダム</option><option value="earth">土（中心円範囲）</option><option value="wind">風（外周ドーナツ範囲）</option></select><div class="secondary-actions"><button id="pause" disabled>一時停止</button><button id="reset" disabled>リセット</button></div><div id="wave-results" class="wave-results" role="status" aria-live="polite"></div></section>
-        <section class="card"><p class="eyebrow">HOW TO PLAY</p><h3>属性をつないで、3回。</h3><ol><li><b>3カウント後にデバフ確認</b><span>3秒の準備後、最初の塔が点灯。</span></li><li><b>デバフ持ちは時計回りに次の塔</b><span>同属性の点灯塔を探し、次の点灯塔へ。同属性が2本なら後ろ側を基準にします。</span></li><li><b>無職は重複属性の後ろ側</b><span>ボスから見て右側の塔に入ります。</span></li><li><b>各フェーズ7秒後に判定</b><span>1・3回目は土＝外側、風＝内側へ寄って塔と攻撃を同時に処理。</span></li></ol><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動 / 左ドラッグでカメラ</span><span>スマホ：左スティックでカメラ、右で移動</span><span>カメラ回転で見え方を変えて塔を確認できます。</span></div></section>
+        <section class="card"><p class="eyebrow">HOW TO PLAY</p><h3>属性をつないで、3回。</h3><ol><li><b>3カウント後にデバフ確認</b><span>3秒の準備後、最初の塔が点灯。</span></li><li><b>デバフ持ちは時計回りに次の塔</b><span>同属性の点灯塔を探し、次の点灯塔へ。同属性が2本なら後ろ側を基準にします。</span></li><li><b>無職は重複属性の後ろ側</b><span>ボスから見て右側の塔に入ります。</span></li><li><b>各フェーズ7秒後に判定</b><span>1・3回目は土＝外側、風＝内側へ寄って塔と攻撃を同時に処理。</span></li></ol><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動 / 左ドラッグでカメラ</span><span>スマホ：左スティックでカメラ、右で移動</span><span>ゲームパッド：左で移動、右でカメラ</span><span>START／OPTIONS：開始 · A／×：一時停止 · BACK／SHARE：リセット</span><span>カメラ回転で見え方を変えて塔を確認できます。</span></div></section>
       </aside>
     </div>
     <footer>非公式の練習用シミュレーター · 実際のゲームとは判定・移動速度が異なります。<br>参考：<a href="https://yan-flash.com/ultimate/yosei-ranbu#ult-phase-5" target="_blank" rel="noopener noreferrer">ヤーン速報・絶妖星乱舞 P5</a></footer>

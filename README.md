@@ -97,3 +97,7 @@ URLは通常 `https://<ユーザー名>.github.io/<リポジトリ名>/`。相�
 外部ゲーム素材は使用していません。実際のFF14とはギミックの細部・速度・判定が異なる練習用実装です。
 
 参考: [Pyodide公式ドキュメント](https://pyodide.org/en/stable/usage/quickstart.html)、[GitHub Pages公式ドキュメント](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)。
+
+## コントローラー操作
+
+全シミュレーターで標準配置のゲームパッドに対応。接続後、ページ上でボタンを押すと認識します。左スティックでカメラ方向に合わせた移動、右スティックでカメラ回転・角度調整。START／OPTIONSで開始、A／×で一時停止・再開、BACK／SHAREでリセットします。スティックのデッドゾーンは18%。キーボード・タッチ操作を優先し、切断時やページを離れた際は自動で一時停止します。標準配置として認識されない機器は画面に案内を表示します。

@@ -1,0 +1,33 @@
+const assert=require('node:assert/strict');
+const {GamepadInput}=require('../controls.js');
+let pads=[];
+const input=new GamepadInput(()=>pads);
+const controller=(index=0)=>({index,connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:16},()=>({pressed:false}))});
+assert.equal(input.poll().status,'none');
+pads=[null,controller(1)];
+assert.equal(input.poll().status,'connected');
+pads[1].axes=[.1,-.1,1,-1];
+let result=input.poll();
+assert.equal(result.moveX,0);assert.equal(result.moveY,0);
+assert.ok(Math.abs(Math.hypot(result.cameraX,result.cameraY)-1)<1e-9);
+pads[1].axes=[.5,0,0,0];
+assert.ok(Math.abs(input.poll().moveX-(.5-.18)/.82)<1e-9);
+for(const [index,action] of [[9,'start'],[0,'pause'],[8,'reset']]) {
+  pads[1].buttons[index].pressed=true;
+  assert.deepEqual(input.poll().actions,[action]);
+  assert.deepEqual(input.poll().actions,[],'Held buttons must not repeat commands');
+  pads[1].buttons[index].pressed=false;input.poll();
+}
+pads[1].buttons[9].pressed=true;
+assert.equal(input.poll(false).moveX,0);
+assert.deepEqual(input.poll().actions,[],'Focus return must not trigger a held button');
+pads=[];
+result=input.poll();assert.equal(result.disconnected,true);assert.equal(result.moveX,0);
+assert.equal(input.poll().disconnected,false);
+pads=[controller(2)];pads[0].buttons[9].pressed=true;
+assert.deepEqual(input.poll().actions,[],'New connection must not trigger a held button');
+pads[0].mapping='';
+assert.equal(input.poll().status,'unsupported');assert.equal(input.poll().moveX,0);
+const blocked=new GamepadInput(()=>{throw new Error('Unavailable');});
+assert.equal(blocked.poll().status,'none');
+console.log('Gamepad tests passed: analog input, deadzone, both sticks, button edges, focus, disconnect and unsupported mappings.');

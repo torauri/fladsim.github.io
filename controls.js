@@ -6,8 +6,8 @@ function stickVector(dx, dy, radius, deadzone = .12) {
   const amount = Math.min(length / limit, 1);
   const strength = amount > deadzone ? (amount - deadzone) / (1 - deadzone) : 0;
   return {
-    x: length ? dx / length * strength : 0,
-    y: length ? dy / length * strength : 0,
+    x: strength ? dx / length * strength : 0,
+    y: strength ? dy / length * strength : 0,
     thumbX: dx * visualScale,
     thumbY: dy * visualScale
   };
@@ -58,5 +58,36 @@ class VirtualStick {
   }
 }
 
-// Make the math testable with Node while loading this file as a classic browser script.
-if (typeof module !== 'undefined') module.exports = { stickVector, VirtualStick };
+class GamepadInput {
+  constructor(read = () => typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : []) {
+    this.read=read;this.index=null;this.previous=[];this.connected=false;
+  }
+  poll(enabled=true) {
+    let pads=[];
+    try { pads=Array.from(this.read() || []).filter(p=>p && p.connected); } catch {}
+    const pad=pads.find(p=>p.index===this.index) || pads[0];
+    const disconnected=this.connected&&!pad;
+    const result={moveX:0,moveY:0,cameraX:0,cameraY:0,actions:[],disconnected,status:'none'};
+    if(!pad) {this.index=null;this.previous=[];this.connected=false;return result;}
+    const changed=!this.connected || this.index!==pad.index;
+    this.connected=true;this.index=pad.index;
+    const buttons=Array.from(pad.buttons || [],b=>Boolean(b?.pressed));
+    result.status=pad.mapping==='standard'?'connected':'unsupported';
+    if(enabled && !changed && pad.mapping==='standard') {
+      for(const [index,action] of [[9,'start'],[0,'pause'],[8,'reset']]) {
+        if(buttons[index]&&!this.previous[index]) result.actions.push(action);
+      }
+    }
+    this.previous=buttons;
+    if(enabled && pad.mapping==='standard') {
+      const axis=i=>Number.isFinite(pad.axes?.[i])?Math.max(-1,Math.min(1,pad.axes[i])):0;
+      const move=stickVector(axis(0)*100,axis(1)*100,100,.18);
+      const camera=stickVector(axis(2)*100,axis(3)*100,100,.18);
+      Object.assign(result,{moveX:move.x,moveY:move.y,cameraX:camera.x,cameraY:camera.y});
+    }
+    return result;
+  }
+}
+
+// Make input logic testable with Node and usable as a classic browser script.
+if (typeof module !== 'undefined') module.exports = { stickVector, VirtualStick, GamepadInput };

@@ -9,6 +9,7 @@ function surface() {
     children: Array.from({length:4}, () => ({})),
     addEventListener(type, handler) {(listeners[type] ||= []).push(handler);},
     send(type, event={}) {for (const handler of listeners[type] || []) handler(event);},
+    click(){if(!this.disabled)this.send('click');},
     setPointerCapture:id=>captures.add(id),
     hasPointerCapture:id=>captures.has(id),
     releasePointerCapture:id=>captures.delete(id),
@@ -20,17 +21,19 @@ const element = id => {if (!elements.has(id)) elements.set(id,surface());return 
 const document = surface(), window = surface();
 document.getElementById = element;
 document.querySelector = selector => element(selector.slice(1));
-const orbitCalls = [], targets = [], actions = [];
+const orbitCalls = [], targets = [], actions = [], updates=[];
 let resets = 0;
+let pads=[];
 const context = vm.createContext({document,window,console,
+  GamepadInput:class extends require('../controls.js').GamepadInput {constructor(){super(()=>pads);}},
   VirtualStick: class {constructor(){this.x=this.y=0;}clear(){this.x=this.y=0;}},
   ResizeObserver: class {observe(){}}, requestAnimationFrame(){},
-  fakeWorld:{orbit:(x,y)=>{orbitCalls.push([x,y]);return false;},draw(){},resetCamera(){resets++;}},
-  targets, actions
+  fakeWorld:{orbit:(x,y)=>{orbitCalls.push([x,y]);return false;},movement:(x,y)=>({dx:x,dy:y}),draw(){},resetCamera(){resets++;}},
+  targets, actions, updates
 });
 const app = fs.readFileSync(require.resolve('../app.js'),'utf8').replace(/boot\(\);\s*$/, '');
 vm.runInContext(app,context);
-vm.runInContext('world=fakeWorld; command=(action,payload)=>{actions.push(action);if(action==="target") targets.push(JSON.parse(payload));return JSON.stringify(state);};', context);
+vm.runInContext('world=fakeWorld; command=(action,payload)=>{actions.push(action);if(action==="target") targets.push(JSON.parse(payload));if(action==="update") updates.push(JSON.parse(payload));return JSON.stringify(state);};', context);
 const canvas = element('arena');
 const event = (button, id, x, y, extra={}) => ({button,pointerId:id,clientX:x,clientY:y,pointerType:'mouse',preventDefault(){},...extra});
 canvas.send('pointerdown',event(0,1,100,100));
@@ -68,4 +71,20 @@ assert.equal(element('view').textContent,'真上から見る');
 assert.equal(actions.at(-1),'start');
 element('start').send('click');
 assert.equal(resets,2,'Restarting must also reset the camera');
+window.send('focus');
+pads=[{index:0,connected:true,mapping:'standard',axes:[1,0,.5,0],buttons:Array.from({length:16},()=>({pressed:false}))}];
+vm.runInContext('frame(0);frame(100);',context);
+assert.equal(updates.at(-1).dx,1,'Left gamepad stick must reach simulation movement');
+vm.runInContext('held.add("a");frame(150);held.clear();',context);
+assert.equal(updates.at(-1).dx,-1,'Keyboard movement must take priority over the controller');
+assert.ok(orbitCalls.at(-1)[0]<0,'Right gamepad stick must reach camera controls');
+assert.equal(vm.runInContext('state.paused',context),false);
+pads[0].buttons[9].pressed=true;
+vm.runInContext('frame(200);frame(300);',context);
+assert.equal(resets,3,'Gamepad START must restart only once while held');
+vm.runInContext('state.running=true;',context);
+pads=[];
+vm.runInContext('frame(400);',context);
+assert.equal(updates.at(-1).dx,0,'Disconnecting must clear movement immediately');
+assert.ok(actions.includes('pause'),'Disconnecting during play must pause');
 console.log('PC input tests passed: left camera drag, no click/tap movement, pointer cancellation and camera reset on every start.');

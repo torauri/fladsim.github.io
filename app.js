@@ -7,6 +7,23 @@ let state = {x: 0, y: .72, telegraphs: [], angles: [], hits: [], resolved: 0, ti
 let command, world, lastTime, held = new Set(), canvasPointer = null;
 const cameraStick = new VirtualStick($('camera-stick'));
 const moveStick = new VirtualStick($('move-stick'));
+const gamepadInput = new GamepadInput();
+let gamepadFocused = true;
+function pollGamepad() {
+  const input=gamepadInput.poll(gamepadFocused && !document.hidden);
+  const label=$('gamepad-status');
+  const message=input.status==='connected'
+    ? 'コントローラー接続中：左＝移動／右＝カメラ／START・OPTIONS＝開始／A・×＝一時停止／BACK・SHARE＝リセット'
+    : input.status==='unsupported'?'コントローラーを検出しましたが、標準ボタン配置に対応していません。'
+    : 'コントローラー：接続してボタンを押すと認識します。';
+  if(label && label.textContent!==message) label.textContent=message;
+  if(input.disconnected && state.running && !state.paused) call('pause');
+  for(const action of input.actions.slice(0,1)) {
+    const button=$(action);
+    if(button && !button.disabled) button.click();
+  }
+  return input;
+}
 function clearInput() {
   held.clear();
   cameraStick.clear();
@@ -124,7 +141,8 @@ document.addEventListener('keydown', event => {
   if ('wasd'.includes(key) && key.length === 1) { event.preventDefault(); held.add(key); }
 });
 document.addEventListener('keyup', event => held.delete(event.key.toLowerCase()));
-window.addEventListener('blur', () => { clearInput(); if (state.running && !state.paused) call('pause'); });
+window.addEventListener('blur', () => { gamepadFocused=false;clearInput(); if (state.running && !state.paused) call('pause'); });
+window.addEventListener('focus', () => { gamepadFocused=true; });
 document.addEventListener('visibilitychange', () => { clearInput(); lastTime = undefined; if (document.hidden && state.running && !state.paused) call('pause'); });
 window.addEventListener('resize', clearInput);
 $('start').addEventListener('click', () => {
@@ -138,13 +156,16 @@ $('start').addEventListener('click', () => {
 $('reset').addEventListener('click', () => { clearInput(); call('reset'); });
 $('pause').addEventListener('click', () => { clearInput(); call('pause'); canvas.focus({ preventScroll: true }); });
 function frame(now) {
+  const pad=command?pollGamepad():{moveX:0,moveY:0,cameraX:0,cameraY:0};
   if (command && lastTime !== undefined) {
     const dt = Math.min((now - lastTime) / 1000, .1);
-    orbit(-cameraStick.x * dt * 1.8, cameraStick.y * dt * 1.2);
+    const touchCamera=cameraStick.x || cameraStick.y;
+    orbit(-(touchCamera?cameraStick.x:pad.cameraX) * dt * 1.8, (touchCamera?cameraStick.y:pad.cameraY) * dt * 1.2);
     const keyboardX = Number(held.has('d')) - Number(held.has('a'));
     const keyboardY = Number(held.has('s')) - Number(held.has('w'));
-    const movement = world.movement(keyboardX || keyboardY ? keyboardX : moveStick.x,
-      keyboardX || keyboardY ? keyboardY : moveStick.y);
+    const touchMoving=moveStick.x || moveStick.y;
+    const movement = world.movement(keyboardX || keyboardY ? keyboardX : touchMoving?moveStick.x:pad.moveX,
+      keyboardX || keyboardY ? keyboardY : touchMoving?moveStick.y:pad.moveY);
     call('update', {dt, ...movement});
   }
   lastTime = now; draw(); requestAnimationFrame(frame);
