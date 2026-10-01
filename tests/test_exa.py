@@ -67,7 +67,7 @@ class ExaTests(unittest.TestCase):
         game.paused=True; game.update(30,1,0)
         self.assertEqual(game.time,0)
         game.paused=False; game.update(1,.5,0)
-        self.assertAlmostEqual(game.x,.275)
+        self.assertAlmostEqual(game.x,.20625)
         game.update(30,1,1)
         self.assertLessEqual(math.hypot(game.x,game.y),.975+1e-9)
         self.assertEqual(game.resolved,6*2*STEPS)
