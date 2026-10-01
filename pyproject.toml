@@ -1,7 +1,8 @@
 [project]
 name = "fladsim"
 version = "0.1.0"
-description = "Browser-based FFXIV mechanic practice"
+description = "Browser-based mechanic practice simulator"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = []
 

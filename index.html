@@ -6,12 +6,16 @@
   <meta name="theme-color" content="#10191f">
   <title>FladSim — シミュレーター選択</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="menu.css?v=updates-1">
 </head>
 <body>
   <main>
-    <header><a class="brand" href="./"><span class="brand-icon">✦</span> Flad<span>Sim</span></a><span class="tag">FFXIV MECHANIC PRACTICE</span></header>
+    <header><a class="brand" href="./"><span class="brand-icon">✦</span> Flad<span>Sim</span></a></header>
     <section class="selection-intro"><p class="eyebrow">CHOOSE YOUR TRAINING</p><h1>練習するギミックを選ぼう。</h1><p>動きを覚えて、安全地帯へ。<br>PCでもスマホでも、自分のペースで練習できます。</p></section>
+    <section class="updates" aria-labelledby="updates-title">
+      <div class="updates-heading"><h2 id="updates-title">直近の更新情報</h2><time datetime="2026-10-02">2026.10.02</time></div>
+      <ul><li>キャラクターの移動速度を下げました。</li><li>PAD（ゲームコントローラー）に対応しました。Chromeで試してみてください。</li></ul>
+    </section>
     <nav class="sim-grid" aria-label="シミュレーター選択">
       <a class="sim-link" href="flood.html" aria-label="フラッドを練習する">
         <div class="sim-art" aria-hidden="true"><div class="mini-arena"><div class="mini-band"></div><span class="mini-label">A</span><span class="mini-player"></span></div></div>
@@ -26,7 +30,7 @@
         <div class="sim-copy"><div class="sim-meta"><p class="eyebrow">TRAINING / 03</p><span class="availability">練習できます</span></div><h2>エクサ</h2><p>北西・北東から迫る連続円範囲。<br>円が通過した直後の場所へ移動しよう。</p><span class="sim-action">エクサをはじめる <span>→</span></span></div>
       </a>
     </nav>
-    <footer class="selection-footer">非公式の練習用シミュレーター · 実際のゲームとは判定・移動速度が異なります。</footer>
+    <footer class="selection-footer">非公式の練習用シミュレーター · 実際のゲームとは判定・移動速度が異なります。<br>参考：<a href="https://yan-flash.com/" target="_blank" rel="noopener noreferrer">ヤーン速報</a> · <a href="LICENSE">MIT License</a></footer>
   </main>
 </body>
 </html>
