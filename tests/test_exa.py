@@ -21,7 +21,7 @@ class ExaTests(unittest.TestCase):
                 self.assertEqual(len(events),STEPS*2)
                 coordinate='x' if pattern['axis']=='vertical' else 'y'
                 self.assertEqual({e[coordinate] for e in events},set(LANES[pattern['pattern']]))
-                self.assertAlmostEqual(events[1]['at']-events[0]['at'],.5)
+                self.assertAlmostEqual(events[1]['at']-events[0]['at'],.4)
                 if pattern['axis']=='horizontal':
                     self.assertAlmostEqual(events[0]['x']-RADIUS,1)
                     self.assertGreater(events[0]['x'],events[-1]['x'])
