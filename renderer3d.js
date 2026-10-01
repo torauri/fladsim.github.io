@@ -7,6 +7,8 @@ export function createArena(canvas, options = {}) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1.32, 1.32, 1.32, -1.32, .01, 20);
+  camera.zoom = options.mode==='exa'?1.15:1;
+  camera.updateProjectionMatrix();
   const initialElevation = Math.atan2(3.3, 2.3);
   const initialAzimuth = options.mode==='exa'?-Math.PI/4:0;
   let azimuth = initialAzimuth, elevation = initialElevation;
