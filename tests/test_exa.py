@@ -1,74 +1,67 @@
 import math
 import random
 import unittest
-
-from exa import BLAST_DURATION, COUNTDOWN, LANES, RADIUS, ExaGame
-
+from exa import LANES, ExaGame
 
 class ExaTests(unittest.TestCase):
-    def test_all_six_lane_patterns_and_sequence(self):
-        for pattern in range(3):
-            game = ExaGame()
-            game.start(pattern=str(pattern))
-            vertical = [e for e in game.events if e['axis']=='vertical']
-            horizontal = [e for e in game.events if e['axis']=='horizontal']
-            self.assertEqual({e['x'] for e in vertical},set(LANES[pattern]))
-            self.assertEqual({e['y'] for e in horizontal},set(LANES[pattern]))
-            self.assertEqual(len(vertical),16)
-            self.assertEqual(len(horizontal),16)
-            self.assertGreater(min(e['at'] for e in horizontal),max(e['at'] for e in vertical)+BLAST_DURATION)
-            self.assertEqual([e['y'] for e in vertical[:8]],sorted(e['y'] for e in vertical[:8]))
-
-    def test_countdown_telegraph_attack_and_no_repeated_hit(self):
-        game = ExaGame()
-        game.start(pattern='0')
-        game.update(COUNTDOWN)
-        self.assertEqual(game.state()['phase'],'warning')
-        self.assertEqual(len(game.state()['circles']),2)
-        game.x,game.y = -.55,-.97
-        game.update(1.5)
-        self.assertEqual(len(game.hits),1)
-        game.update(.1)
-        self.assertEqual(len(game.hits),1)
-        self.assertEqual(game.resolved,2)
-        self.assertTrue(any(c['attack'] for c in game.state()['circles']))
-
-    def test_late_entry_during_blast_is_hit(self):
-        game = ExaGame()
-        game.start(pattern='0')
-        game.update(4.6)
-        self.assertEqual(game.hits,[])
-        game.x,game.y = -.55,-.9
-        game.update(.01)
-        self.assertEqual(len(game.hits),1)
-
-    def test_safe_center_and_end_cleanup(self):
-        game = ExaGame()
-        game.start(pattern='0')
-        game.x=game.y=0
-        game.update(30)
-        self.assertEqual(game.hits,[])
-        self.assertEqual(game.resolved,32)
-        self.assertFalse(game.running)
-        self.assertEqual(game.state()['circles'],[])
-        self.assertEqual(game.state()['phase'],'result')
-
-    def test_random_patterns_tempo_pause_and_reset(self):
-        patterns=set()
+    def test_six_waves_direction_patterns_and_timing(self):
+        orders=set()
         for seed in range(30):
             game=ExaGame(random.Random(seed))
-            game.start(tempo='fast')
-            patterns.add(tuple(game.patterns.values()))
-            self.assertAlmostEqual(game.events[1]['at']-game.events[0]['at'],.8)
-        self.assertEqual(len(patterns),9)
-        game.paused=True
-        game.update(2,1,0)
-        self.assertEqual(game.time,0)
-        game.paused=False
-        game.update(1,.5,0)
-        self.assertAlmostEqual(game.x,.275)
-        game.update(10,1,1)
-        self.assertLessEqual(math.hypot(game.x,game.y),.975+1e-9)
-        game.reset()
-        self.assertEqual(game.state()['phase'],'ready')
+            game.start()
+            self.assertEqual([p['axis'] for p in game.patterns],['vertical','horizontal']*3)
+            self.assertEqual([p['warning_at'] for p in game.patterns],[3,5,7,9,11,13])
+            self.assertEqual([p['start_at'] for p in game.patterns],[7,9,11,13,15,17])
+            for axis in ('vertical','horizontal'):
+                order=tuple(p['pattern'] for p in game.patterns if p['axis']==axis)
+                self.assertEqual(set(order),{0,1,2})
+                orders.add(order)
+            for wave,pattern in enumerate(game.patterns):
+                events=[e for e in game.events if e['wave']==wave]
+                self.assertEqual(len(events),16)
+                coordinate='x' if pattern['axis']=='vertical' else 'y'
+                self.assertEqual({e[coordinate] for e in events},set(LANES[pattern['pattern']]))
+                self.assertAlmostEqual(events[1]['at']-events[0]['at'],.5)
+                if pattern['axis']=='horizontal':
+                    self.assertEqual(events[0]['x'],1.05)
+                    self.assertGreater(events[0]['x'],events[-1]['x'])
+        self.assertEqual(len(orders),6)
+
+    def test_warnings_every_two_seconds_and_four_second_delay(self):
+        game=ExaGame(random.Random(0)); game.start()
+        game.update(2.99)
         self.assertEqual(game.state()['circles'],[])
+        game.update(.01)
+        self.assertEqual(len(game.state()['circles']),2)
+        game.update(2)
+        self.assertEqual(len(game.state()['circles']),4)
+        self.assertFalse(any(c['attack'] for c in game.state()['circles']))
+        game.update(2)
+        self.assertEqual({c['wave'] for c in game.state()['circles'] if c['attack']},{0})
+        self.assertEqual(game.resolved,2)
+
+    def test_late_entry_hits_only_once(self):
+        game=ExaGame(random.Random(1)); game.start()
+        event=game.events[0]
+        game.update(7.1)
+        self.assertEqual(game.hits,[])
+        game.x,game.y=event['x'],event['y']+.1
+        game.update(.01)
+        self.assertEqual(game.hits,[event['id']])
+        game.update(.1)
+        self.assertEqual(game.hits,[event['id']])
+
+    def test_end_pause_and_reset(self):
+        game=ExaGame(random.Random(2)); game.start()
+        game.paused=True; game.update(30,1,0)
+        self.assertEqual(game.time,0)
+        game.paused=False; game.update(1,.5,0)
+        self.assertAlmostEqual(game.x,.275)
+        game.update(30,1,1)
+        self.assertLessEqual(math.hypot(game.x,game.y),.975+1e-9)
+        self.assertEqual(game.resolved,96)
+        self.assertEqual(game.state()['phase'],'result')
+        self.assertEqual(game.state()['circles'],[])
+        game.reset()
+        self.assertEqual(game.state()['patterns'],[])
+        self.assertEqual(game.state()['phase'],'ready')

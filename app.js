@@ -67,7 +67,8 @@ function updateExaUI() {
   $('start').innerHTML=(state.started?'もう一度はじめる':'練習をはじめる')+'<span>→</span>';
   $('pause').disabled=!state.running;$('pause').textContent=state.paused?'再開':'一時停止';
   $('countdown-overlay').hidden=state.phase!=='countdown';$('countdown-overlay').textContent=state.countdown;
-  $('pattern-status').textContent=Object.entries(state.patterns).map(([axis,index])=>`${axis==='vertical'?'縦':'横'}：パターン${index+1}`).join(' ／ ') || '6種類の通過位置';
+  const latest=state.patterns.at(-1);
+  $('pattern-status').textContent=latest?`予兆 ${latest.wave} / 6：${latest.axis==='vertical'?'縦':'横'}・パターン${latest.pattern+1}`:'縦横縦横縦横・計6回';
 }
 function updateThreeStarsUI() {
   const elements = {fire:'炎',lightning:'雷',ice:'氷'};
@@ -130,7 +131,7 @@ $('start').addEventListener('click', () => {
   clearInput();
   world.resetCamera();
   $('view').textContent = '真上から見る';
-  call('start', isExa ? {direction:'sequential',pattern:$('pattern').value,tempo:$('tempo').value} : isThreeStars ? {debuff:$('debuff-choice').value,attack:$('attack-choice').value} : { direction: $('direction').value });
+  call('start', isExa ? {} : isThreeStars ? {debuff:$('debuff-choice').value,attack:$('attack-choice').value} : { direction: $('direction').value });
   canvas.focus({ preventScroll: true });
   draw();
 });

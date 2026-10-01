@@ -10,7 +10,9 @@ LANES = ((-.55, .55), (-.90, .22), (-.22, .90))
 STEPS = 8
 STEP_DISTANCE = .30
 COUNTDOWN = 3
-WARNING = 1.5
+WARNING = 4
+WAVE_INTERVAL = 2
+INTERVAL = .5
 BLAST_DURATION = .35
 
 
@@ -26,26 +28,27 @@ class ExaGame:
         self.hits = []
         self.resolved = 0
         self.events = []
-        self.patterns = {}
-        self.interval = 1
+        self.patterns = []
+        self.interval = INTERVAL
         self.visual_time = 0
 
-    def start(self, direction='sequential', pattern='random', tempo='normal'):
+    def start(self):
         self.reset()
         self.started = self.running = True
-        self.interval = {'slow':1.3, 'normal':1, 'fast':.8}.get(tempo,1)
-        axes = ['vertical','horizontal'] if direction in ('both','sequential') else [direction]
-        for axis_index, axis in enumerate(axes):
-            index = self.rng.randrange(3) if pattern == 'random' else int(pattern)
-            self.patterns[axis] = index
-            delay = (STEPS * self.interval + 1) * axis_index if direction == 'sequential' else 0
+        orders = {axis:self.rng.sample(range(3),3) for axis in ('vertical','horizontal')}
+        for wave in range(6):
+            axis = 'vertical' if wave % 2 == 0 else 'horizontal'
+            index = orders[axis][wave // 2]
+            warning_at = COUNTDOWN + wave * WAVE_INTERVAL
+            self.patterns.append({'axis':axis,'pattern':index,'warning_at':warning_at,
+                                  'start_at':warning_at + WARNING})
             for lane_index, lane in enumerate(LANES[index]):
                 for step in range(STEPS):
                     position = -1.05 + step * STEP_DISTANCE
-                    x,y = (lane,position) if axis == 'vertical' else (position,lane)
+                    x,y = (lane,position) if axis == 'vertical' else (-position,lane)
                     self.events.append({'id':len(self.events), 'x':x, 'y':y, 'radius':RADIUS,
-                                        'step':step, 'axis':axis, 'lane':lane_index,
-                                        'at':COUNTDOWN + WARNING + delay + step * self.interval})
+                                        'step':step, 'axis':axis, 'lane':lane_index, 'wave':wave,
+                                        'at':warning_at + WARNING + step * self.interval})
         self.end = max(e['at'] for e in self.events) + BLAST_DURATION
 
     def update(self, dt, dx=0, dy=0):
@@ -86,11 +89,12 @@ class ExaGame:
             attack = event['at'] <= now < event['at'] + BLAST_DURATION
             if phase != 'result' and (warning_start <= now < event['at'] or attack):
                 circles.append({**event, 'attack':attack})
+        revealed = [dict(p, wave=i+1) for i,p in enumerate(self.patterns) if p['warning_at'] <= now]
         return {'mode':'exa', 'x':self.x,'y':self.y,'time':self.time,
                 'phase':phase,'running':self.running,'paused':self.paused,'started':self.started,
                 'countdown':max(1,math.ceil(COUNTDOWN-now)) if phase=='countdown' else 0,
                 'hits':self.hits,'resolved':self.resolved,'total':len(self.events),
-                'circles':circles,'patterns':self.patterns,'interval':self.interval,
+                'circles':circles,'patterns':revealed,'interval':self.interval,
                 'hit_flash':any(e['id'] in self.hits and 0 <= self.visual_time-e['at'] < .5 for e in self.events),
                 'telegraphs':[],'angles':[]}
 
@@ -101,7 +105,7 @@ game = ExaGame()
 def command(action,payload='{}'):
     data = json.loads(payload)
     if action == 'start':
-        game.start(data.get('direction','sequential'),data.get('pattern','random'),data.get('tempo','normal'))
+        game.start()
     elif action == 'reset':
         game.reset()
     elif action == 'pause':

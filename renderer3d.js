@@ -116,7 +116,7 @@ export function createArena(canvas, options = {}) {
     const floor=mesh(new THREE.CircleGeometry(event.radius,64),material,group);floor.rotation.x=-Math.PI/2;floor.position.y=.025;
     const edge=ring(event.radius,'#ffd39a',.03,.005,group);
     const blast=mesh(new THREE.CylinderGeometry(event.radius*.65,event.radius,.45,32,1,true),material.clone(),group);blast.position.y=.24;
-    const direction=new THREE.Vector3(event.axis==='vertical'?0:1,0,event.axis==='vertical'?1:0);
+    const direction=new THREE.Vector3(event.axis==='vertical'?0:-1,0,event.axis==='vertical'?1:0);
     const arrow=new THREE.ArrowHelper(direction,new THREE.Vector3(event.x,.06,event.y),.2,0xffe0ac,.07,.06);scene.add(arrow);
     return {group,material,edge,blast,arrow};
   }
